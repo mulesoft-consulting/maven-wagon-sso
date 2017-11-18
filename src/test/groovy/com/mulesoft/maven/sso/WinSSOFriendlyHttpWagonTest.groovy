@@ -8,6 +8,8 @@ import org.apache.tools.ant.taskdefs.condition.Os
 import org.codehaus.plexus.util.FileUtils
 import org.junit.*
 
+import java.util.zip.ZipFile
+
 import static groovy.test.GroovyAssert.shouldFail
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
@@ -306,6 +308,15 @@ class WinSSOFriendlyHttpWagonTest {
         def pomText = new String(pomBytes)
         assertThat pomText,
                    is(containsString('<artifactId>test.artifact</artifactId>'))
-        fail 'write this'
+        def jarFile = new File(tmpDir, 'something.jar')
+        jarFile.bytes = jarBytes
+        def zipFile = new ZipFile(jarFile)
+        def size = 0
+        zipFile.entries().each { entry ->
+            size++
+            println "entry ${entry.name}"
+        }
+        assertThat size,
+                   is(equalTo(7))
     }
 }
