@@ -163,7 +163,8 @@ class WinSSOFriendlyHttpWagonTest {
     @Test
     void simpleFetch_spnego() {
         // arrange
-        // Could spin up Kerberos/Docker/etc. but Apache's code already handles this
+        // Could spin up Kerberos/Docker/etc. but Apache's code is what's handling SPNego
+        // so we don't need to test that as thoroughly
         Assume.assumeTrue('Easier to run test on Windows',
                           Os.isFamily(Os.FAMILY_WINDOWS))
         def challengedOnce = false
@@ -177,20 +178,22 @@ class WinSSOFriendlyHttpWagonTest {
             }
             println "End headers"
             request.response().with {
-                if (uri.endsWith('maven-metadata.xml')) {
-                    if (challengedOnce) {
-                        statusCode = 200
-                        spNegoToken = request.getHeader('Authorization')
-                        def file = new File(testResources, 'simple_pom_artifact_metadata.xml')
-                        assert file.exists()
-                        end(file.text)
-                        return
-                    }
+                if (!spNegoToken && !request.getHeader('Authorization')) {
                     challengedOnce = true
                     println "Triggering SPNEGO challenge/401 for ${uri}"
                     statusCode = 401
                     putHeader('WWW-Authenticate', 'Negotiate')
                     end()
+                    return
+                }
+                if (!spNegoToken) {
+                    spNegoToken = request.getHeader('Authorization')
+                }
+                if (uri.endsWith('maven-metadata.xml')) {
+                    statusCode = 200
+                    def file = new File(testResources, 'simple_pom_artifact_metadata.xml')
+                    assert file.exists()
+                    end(file.text)
                     return
                 }
                 if (uri.endsWith('sha1')) {
