@@ -218,4 +218,14 @@ class WinSSOFriendlyHttpWagonTest {
                    is(equalTo(['foo']))
         fail 'write this'
     }
+
+    @Test
+    void proxyFetch_Bypass() {
+        // arrange
+
+        // act
+
+        // assert
+        fail 'write this'
+    }
 }
