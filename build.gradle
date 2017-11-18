@@ -39,6 +39,7 @@ dependencies {
     compile "org.apache.httpcomponents:httpclient-win:${httpClientVersion}"
     // TODO: Windows friendly slashes??
     testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile 'org.apache.ant:ant:1.9.7'
 }
 
 jar {
@@ -66,4 +67,11 @@ task install(type: Copy, dependsOn: jar) {
 task uninstall(type: Delete) {
     description 'Uninstalls the wagon JAR from your Maven home directory'
     delete new File(libExt, jarFile.name)
+}
+
+clean {
+    // we download a copy of Maven during our tests, clean it out too
+    delete 'tmp'
+    // IntelliJ
+    delete 'out'
 }
