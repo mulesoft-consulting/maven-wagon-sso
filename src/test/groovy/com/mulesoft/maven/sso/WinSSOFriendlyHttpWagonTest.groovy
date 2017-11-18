@@ -19,6 +19,7 @@ class WinSSOFriendlyHttpWagonTest {
     static File mavenDir
     List<HttpServer> startedServers
     static File tmpDir = new File('tmp')
+    static File scratchPad = new File(tmpDir, 'scratchpad')
 
     @BeforeClass
     static void setup() {
@@ -36,6 +37,9 @@ class WinSSOFriendlyHttpWagonTest {
         def repoDir = new File(tmpDir, 'repoDir')
         if (repoDir.exists()) {
             assert repoDir.deleteDir()
+        }
+        if (scratchPad.exists()) {
+            assert scratchPad.deleteDir()
         }
     }
 
@@ -331,7 +335,8 @@ class WinSSOFriendlyHttpWagonTest {
         def pomText = new String(pomBytes)
         assertThat pomText,
                    is(containsString('<artifactId>test.artifact</artifactId>'))
-        def jarFile = new File(tmpDir, 'something.jar')
+        scratchPad.mkdirs()
+        def jarFile = new File(scratchPad, 'something.jar')
         jarFile.bytes = jarBytes
         def zipFile = new ZipFile(jarFile)
         def size = 0
