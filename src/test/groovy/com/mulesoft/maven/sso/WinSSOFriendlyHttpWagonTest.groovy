@@ -9,8 +9,7 @@ import org.codehaus.plexus.util.FileUtils
 import org.junit.*
 
 import static groovy.test.GroovyAssert.shouldFail
-import static org.hamcrest.Matchers.equalTo
-import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
 class WinSSOFriendlyHttpWagonTest {
@@ -271,6 +270,8 @@ class WinSSOFriendlyHttpWagonTest {
     void deploy() {
         // arrange
         List<String> postedUrls = []
+        byte[] jarBytes = null
+        byte[] pomBytes = null
         httpServer.requestHandler { HttpServerRequest request ->
             def uri = request.absoluteURI()
             request.response().with {
@@ -282,6 +283,11 @@ class WinSSOFriendlyHttpWagonTest {
                 println "Got POST ${uri}..."
                 postedUrls << uri
                 request.bodyHandler { Buffer buffer ->
+                    if (uri.endsWith('pom')) {
+                        pomBytes = buffer.bytes
+                    } else if (uri.endsWith('.jar')) {
+                        jarBytes = buffer.bytes
+                    }
                 }
                 statusCode = 201
                 end()
@@ -295,6 +301,11 @@ class WinSSOFriendlyHttpWagonTest {
                  'deploy'
 
         // assert
+        assert jarBytes
+        assert pomBytes
+        def pomText = new String(pomBytes)
+        assertThat pomText,
+                   is(containsString('<artifactId>test.artifact</artifactId>'))
         fail 'write this'
     }
 }

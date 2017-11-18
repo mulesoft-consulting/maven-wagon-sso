@@ -3,8 +3,10 @@ package com.mulesoft.maven.sso
 import org.apache.http.HttpException
 import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.client.methods.HttpGet
+import org.apache.http.client.methods.HttpPost
 import org.apache.http.client.utils.DateUtils
 import org.apache.http.client.utils.URIBuilder
+import org.apache.http.entity.InputStreamEntity
 import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.impl.client.WinHttpClients
 import org.apache.maven.wagon.*
@@ -38,7 +40,10 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
         def get = new HttpGet(url)
         try {
             def response = httpClient.execute(get)
-            def validateResult = validateResponse(url, resource, response) {
+            def validateResult = validateResponse(url,
+                                                  resource,
+                                                  response,
+                                                  200) {
                 this.fillInputData(backoff(wait, url), inputData)
             }
             if (validateResult) {
@@ -64,6 +69,7 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
     private boolean validateResponse(String url,
                                      Resource resource,
                                      CloseableHttpResponse response,
+                                     int expectedSuccessCode,
                                      Closure waitRetry) {
         def statusCode = response.getStatusLine().getStatusCode()
         def reasonPhrase = ", ReasonPhrase:" + response.getStatusLine().getReasonPhrase() + "."
@@ -86,29 +92,30 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
             case 429:
                 waitRetry()
                 break
-            case 200:
-                def contentLengthHeader = response.getFirstHeader("Content-Length")
-                if (contentLengthHeader != null) {
-                    try {
-                        long contentLength = Long.parseLong(contentLengthHeader.getValue())
-                        // resource.setContentLength(contentLength)
-                    } catch (NumberFormatException var17) {
-                        this.fireTransferDebug(
-                                "error parsing content length header '" + contentLengthHeader.getValue() + "' " + var17)
-                    }
-                }
-
-                def lastModifiedHeader = response.getFirstHeader("Last-Modified")
-                if (lastModifiedHeader != null) {
-                    Date lastModified = DateUtils.parseDate(lastModifiedHeader.getValue())
-                    if (lastModified != null) {
-                        resource.setLastModified(lastModified.getTime())
-                        this.fireTransferDebug(
-                                "last-modified = " + lastModifiedHeader.getValue() + " (" + lastModified.getTime() + ")")
-                    }
-                }
-                return true
             default:
+                if (statusCode == expectedSuccessCode) {
+                    def contentLengthHeader = response.getFirstHeader("Content-Length")
+                    if (contentLengthHeader != null) {
+                        try {
+                            long contentLength = Long.parseLong(contentLengthHeader.getValue())
+                            // resource.setContentLength(contentLength)
+                        } catch (NumberFormatException var17) {
+                            this.fireTransferDebug(
+                                    "error parsing content length header '" + contentLengthHeader.getValue() + "' " + var17)
+                        }
+                    }
+
+                    def lastModifiedHeader = response.getFirstHeader("Last-Modified")
+                    if (lastModifiedHeader != null) {
+                        Date lastModified = DateUtils.parseDate(lastModifiedHeader.getValue())
+                        if (lastModified != null) {
+                            resource.setLastModified(lastModified.getTime())
+                            this.fireTransferDebug(
+                                    "last-modified = " + lastModifiedHeader.getValue() + " (" + lastModified.getTime() + ")")
+                        }
+                    }
+                    return true
+                }
                 this.cleanupGetTransfer(resource)
                 TransferFailedException e = new TransferFailedException(
                         "Failed to transfer file: " + url + ". Return code is: " + statusCode + " " + reasonPhrase)
@@ -129,8 +136,47 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
     }
 
     @Override
+    void put(File source,
+             String resourceName) throws TransferFailedException, ResourceDoesNotExistException, AuthorizationException {
+        def resource = new Resource(resourceName);
+        doPut(resource, source)
+    }
+
+    private void doPut(Resource resource,
+                       File source,
+                       int wait = initialBackoffSeconds) {
+        def url = new URIBuilder(repository.url + "/" + resource).build().toString()
+        def post = new HttpPost(url)
+        post.entity = new InputStreamEntity(source.newInputStream())
+        CloseableHttpResponse response
+        try {
+            response = httpClient.execute(post)
+            validateResponse(url,
+                             resource,
+                             response,
+                             201) {
+                doPut(resource, source, backoff(wait, url))
+            }
+        }
+
+        catch (IOException var18) {
+            this.fireTransferError(resource, var18, TransferEvent.REQUEST_GET)
+            throw new TransferFailedException(var18.getMessage(), var18)
+        } catch (HttpException var19) {
+            this.fireTransferError(resource, var19, TransferEvent.REQUEST_GET)
+            throw new TransferFailedException(var19.getMessage(), var19)
+        } catch (InterruptedException var20) {
+            this.fireTransferError(resource, var20, TransferEvent.REQUEST_GET)
+            throw new TransferFailedException(var20.getMessage(), var20)
+        }
+        finally {
+            response.close()
+        }
+    }
+
+    @Override
     void fillOutputData(OutputData outputData) throws TransferFailedException {
-        throw new Exception('This wagon provider should not use this!')
+        throw new Exception('Not using this approach')
     }
 
     @Override
