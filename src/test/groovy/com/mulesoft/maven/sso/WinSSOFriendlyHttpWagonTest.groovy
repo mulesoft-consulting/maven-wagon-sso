@@ -433,6 +433,18 @@ class WinSSOFriendlyHttpWagonTest {
 
     @Test
     @Ignore('write these')
+    void deploy_redirect_on_post() {
+        // arrange
+        // TODO: Can apache handle this itself??
+
+        // act
+
+        // assert
+        fail 'write this'
+    }
+
+    @Test
+    @Ignore('write these')
     void resourceExists() {
         // arrange
 
