@@ -98,7 +98,7 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
                     if (contentLengthHeader != null) {
                         try {
                             long contentLength = Long.parseLong(contentLengthHeader.getValue())
-                            // resource.setContentLength(contentLength)
+                            resource.setContentLength(contentLength)
                         } catch (NumberFormatException var17) {
                             this.fireTransferDebug(
                                     "error parsing content length header '" + contentLengthHeader.getValue() + "' " + var17)
