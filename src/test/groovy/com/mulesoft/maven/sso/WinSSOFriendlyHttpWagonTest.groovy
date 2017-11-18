@@ -494,6 +494,7 @@ class WinSSOFriendlyHttpWagonTest {
             def newUri = "http://localhost:8081${path}"
             println "redirecting to ${newUri}"
             request.response().with {
+                // Maven wagon will never see this, apache httpclient follows the redirect
                 statusCode = 302
                 putHeader('Location', newUri)
                 end()
