@@ -263,6 +263,7 @@ class WinSSOFriendlyHttpWagonTest {
     }
 
     @Test
+    @Ignore('TODO: Implement this')
     void deploy() {
         // arrange
 
