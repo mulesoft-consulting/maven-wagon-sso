@@ -481,4 +481,78 @@ class WinSSOFriendlyHttpWagonTest {
         // assert
         fail 'write this'
     }
+
+    @Test
+    void simpleFetch_302() {
+        // arrange
+        List<String> requestedUrls = []
+        def firstSiteHit = false
+        def secondSiteHit = false
+        httpServer.requestHandler { HttpServerRequest request ->
+            firstSiteHit = true
+            def path = request.uri()
+            def newUri = "http://localhost:8081${path}"
+            println "redirecting to ${newUri}"
+            request.response().with {
+                statusCode = 302
+                putHeader('Location', newUri)
+                end()
+            }
+        }.listen(8082, 'localhost')
+        httpServer.requestHandler { HttpServerRequest request ->
+            def uri = request.absoluteURI()
+            println "Fake server got URL ${uri}"
+            println "Headers:"
+            request.headers().each { kvp ->
+                println "Key ${kvp.key} value ${kvp.value}"
+            }
+            println "End headers"
+            requestedUrls << uri
+            request.response().with {
+                if (uri.contains('maven-metadata.xml')) {
+                    statusCode = 200
+                    if (uri.endsWith('sha1')) {
+                        end('dbd5c806a03197aff7179d49f2b7db586887e8a7')
+                        return
+                    }
+                    println 'Returning first pass of metadata'
+                    def file = new File(testResources, 'simple_pom_artifact_metadata.xml')
+                    assert file.exists()
+                    end(file.text)
+                    return
+                }
+                if (uri.contains('test.artifact')) {
+                    if (uri.endsWith('sha1')) {
+                        statusCode = 200
+                        end('1c60353fb663ddec3c69fe6436146a5172ad1b0f')
+                        return
+                    }
+                    secondSiteHit = true
+                    println "returning first pass of POM"
+                    statusCode = 200
+                    putHeader('Content-Type', 'application/xml')
+                    def responseText = new File(testResources, 'simple_pom_artifact.xml')
+                    assert responseText.exists()
+                    end(responseText.text)
+                    return
+                }
+                // we're more interested in the request than what Maven does with the response
+                statusCode = 404
+                end()
+            }
+        }.listen(8081, 'localhost')
+
+        // act
+        // should not cause issues when we run again
+        runMaven 'simple_settings.xml',
+                 'pom_redirect.xml',
+                 'clean',
+                 'compile'
+
+        // assert
+        assertThat firstSiteHit,
+                   is(equalTo(true))
+        assertThat secondSiteHit,
+                   is(equalTo(true))
+    }
 }
