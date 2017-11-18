@@ -3,6 +3,7 @@ package com.mulesoft.maven.sso
 import io.vertx.core.Vertx
 import io.vertx.core.http.HttpServer
 import io.vertx.core.http.HttpServerRequest
+import org.apache.tools.ant.taskdefs.condition.Os
 import org.codehaus.plexus.util.FileUtils
 import org.junit.*
 
@@ -143,9 +144,11 @@ class WinSSOFriendlyHttpWagonTest {
     }
 
     @Test
-    @Ignore('Need Windows to run this one')
     void simpleFetch_spnego() {
         // arrange
+        // Could spin up Kerberos/Docker/etc. but Apache's code already handles this
+        Assume.assumeTrue('Easier to run test on Windows',
+                          Os.isFamily(Os.FAMILY_WINDOWS))
         def challengedOnce = false
         String spNegoToken = null
         httpServer.requestHandler { HttpServerRequest request ->
