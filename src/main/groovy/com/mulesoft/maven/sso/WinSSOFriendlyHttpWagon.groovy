@@ -1,6 +1,7 @@
 package com.mulesoft.maven.sso
 
 import org.apache.http.HttpException
+import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.client.utils.DateUtils
 import org.apache.http.client.utils.URIBuilder
@@ -10,6 +11,7 @@ import org.apache.maven.wagon.*
 import org.apache.maven.wagon.authentication.AuthenticationException
 import org.apache.maven.wagon.authorization.AuthorizationException
 import org.apache.maven.wagon.events.TransferEvent
+import org.apache.maven.wagon.resource.Resource
 
 import java.util.concurrent.TimeUnit
 
@@ -36,59 +38,14 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
         def get = new HttpGet(url)
         try {
             def response = httpClient.execute(get)
-            def statusCode = response.getStatusLine().getStatusCode()
-            def reasonPhrase = ", ReasonPhrase:" + response.getStatusLine().getReasonPhrase() + "."
-            this.fireTransferDebug(url + " - Status code: " + statusCode + reasonPhrase)
-            switch (statusCode) {
-                case 304:
-                    break
-                case 401:
-                    this.fireSessionConnectionRefused()
-                    throw new AuthorizationException("Not authorized " + reasonPhrase)
-                case 403:
-                    this.fireSessionConnectionRefused()
-                    throw new AuthorizationException("Access denied to: " + url + " " + reasonPhrase)
-                case 404:
-                    throw new ResourceDoesNotExistException("File: " + url + " " + reasonPhrase)
-                case 407:
-                    this.fireSessionConnectionRefused()
-                    throw new AuthorizationException("Not authorized by proxy " + reasonPhrase)
-                case 429:
-                    this.fillInputData(backoff(wait, url), inputData)
-                    break
-                case 200:
-                    def contentLengthHeader = response.getFirstHeader("Content-Length")
-                    if (contentLengthHeader != null) {
-                        try {
-                            long contentLength = Long.parseLong(contentLengthHeader.getValue())
-                            // resource.setContentLength(contentLength)
-                        } catch (NumberFormatException var17) {
-                            this.fireTransferDebug(
-                                    "error parsing content length header '" + contentLengthHeader.getValue() + "' " + var17)
-                        }
-                    }
-
-                    def lastModifiedHeader = response.getFirstHeader("Last-Modified")
-                    if (lastModifiedHeader != null) {
-                        Date lastModified = DateUtils.parseDate(lastModifiedHeader.getValue())
-                        if (lastModified != null) {
-                            resource.setLastModified(lastModified.getTime())
-                            this.fireTransferDebug(
-                                    "last-modified = " + lastModifiedHeader.getValue() + " (" + lastModified.getTime() + ")")
-                        }
-                    }
-
-                    def entity = response.getEntity()
-                    if (entity != null) {
-                        inputData.setInputStream(entity.getContent())
-                    }
-                    break
-                default:
-                    this.cleanupGetTransfer(resource)
-                    TransferFailedException e = new TransferFailedException(
-                            "Failed to transfer file: " + url + ". Return code is: " + statusCode + " " + reasonPhrase)
-                    this.fireTransferError(resource, e, TransferEvent.REQUEST_GET)
-                    throw e
+            def validateResult = validateResponse(url, resource, response) {
+                this.fillInputData(backoff(wait, url), inputData)
+            }
+            if (validateResult) {
+                def entity = response.getEntity()
+                if (entity != null) {
+                    inputData.setInputStream(entity.getContent())
+                }
             }
         }
 
@@ -102,6 +59,63 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
             this.fireTransferError(resource, var20, TransferEvent.REQUEST_GET)
             throw new TransferFailedException(var20.getMessage(), var20)
         }
+    }
+
+    private boolean validateResponse(String url,
+                                     Resource resource,
+                                     CloseableHttpResponse response,
+                                     Closure waitRetry) {
+        def statusCode = response.getStatusLine().getStatusCode()
+        def reasonPhrase = ", ReasonPhrase:" + response.getStatusLine().getReasonPhrase() + "."
+        this.fireTransferDebug(url + " - Status code: " + statusCode + reasonPhrase)
+        switch (statusCode) {
+            case 304:
+                assert false: 'not modified! how do we handle this?'
+                break
+            case 401:
+                this.fireSessionConnectionRefused()
+                throw new AuthorizationException("Not authorized " + reasonPhrase)
+            case 403:
+                this.fireSessionConnectionRefused()
+                throw new AuthorizationException("Access denied to: " + url + " " + reasonPhrase)
+            case 404:
+                throw new ResourceDoesNotExistException("File: " + url + " " + reasonPhrase)
+            case 407:
+                this.fireSessionConnectionRefused()
+                throw new AuthorizationException("Not authorized by proxy " + reasonPhrase)
+            case 429:
+                waitRetry()
+                break
+            case 200:
+                def contentLengthHeader = response.getFirstHeader("Content-Length")
+                if (contentLengthHeader != null) {
+                    try {
+                        long contentLength = Long.parseLong(contentLengthHeader.getValue())
+                        // resource.setContentLength(contentLength)
+                    } catch (NumberFormatException var17) {
+                        this.fireTransferDebug(
+                                "error parsing content length header '" + contentLengthHeader.getValue() + "' " + var17)
+                    }
+                }
+
+                def lastModifiedHeader = response.getFirstHeader("Last-Modified")
+                if (lastModifiedHeader != null) {
+                    Date lastModified = DateUtils.parseDate(lastModifiedHeader.getValue())
+                    if (lastModified != null) {
+                        resource.setLastModified(lastModified.getTime())
+                        this.fireTransferDebug(
+                                "last-modified = " + lastModifiedHeader.getValue() + " (" + lastModified.getTime() + ")")
+                    }
+                }
+                return true
+            default:
+                this.cleanupGetTransfer(resource)
+                TransferFailedException e = new TransferFailedException(
+                        "Failed to transfer file: " + url + ". Return code is: " + statusCode + " " + reasonPhrase)
+                this.fireTransferError(resource, e, TransferEvent.REQUEST_GET)
+                throw e
+        }
+        return false
     }
 
     protected static int backoff(int wait, String url) throws InterruptedException, TransferFailedException {
