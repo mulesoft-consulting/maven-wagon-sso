@@ -130,8 +130,6 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
 //        <configuration>
 //        <samlIdpUrl>true</samlIdpUrl>
 //        </configuration>
-        println "repo param ${samlIdpUrl}"
-        println "proxy info for repo ${repository} is ${proxyInfo}"
         // TODO: Add proxy config/route planner here
         // TODO: Also need to add an interceptor to get the SAML token, etc. when appropriate
         // TODO: Need to figure out how to set basic auth credentials for every request w/ httpclient
@@ -141,7 +139,6 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
     @Override
     void closeConnection() throws ConnectionException {
         if (!closed) {
-            println "Closing client for repo ${repository}"
             httpClient.close()
             closed = true
         }
