@@ -138,7 +138,7 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
     @Override
     void put(File source,
              String resourceName) throws TransferFailedException, ResourceDoesNotExistException, AuthorizationException {
-        def resource = new Resource(resourceName);
+        def resource = new Resource(resourceName)
         doPut(resource, source)
     }
 
@@ -148,7 +148,7 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
         def url = new URIBuilder(repository.url + "/" + resource).build().toString()
         def post = new HttpPost(url)
         post.entity = new InputStreamEntity(source.newInputStream())
-        CloseableHttpResponse response
+        CloseableHttpResponse response = null
         try {
             response = httpClient.execute(post)
             validateResponse(url,
@@ -170,7 +170,7 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
             throw new TransferFailedException(var20.getMessage(), var20)
         }
         finally {
-            response.close()
+            response?.close()
         }
     }
 
