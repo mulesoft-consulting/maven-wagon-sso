@@ -193,6 +193,29 @@ class WinSSOFriendlyHttpWagonTest {
     }
 
     @Test
+    @Ignore('write these')
+    void simpleFetch_too_many_429() {
+        // arrange
+        // TODO: Can apache handle this itself??
+
+        // act
+
+        // assert
+        fail 'write this'
+    }
+
+    @Test
+    @Ignore('write these')
+    void simpleFetch_not_modified_304() {
+        // arrange
+
+        // act
+
+        // assert
+        fail 'write this'
+    }
+
+    @Test
     void proxyFetch() {
         // arrange
         List<String> requestedUrls = []
@@ -318,5 +341,17 @@ class WinSSOFriendlyHttpWagonTest {
         }
         assertThat size,
                    is(equalTo(7))
+    }
+
+    @Test
+    @Ignore('write these')
+    void deploy_too_many_429() {
+        // arrange
+        // TODO: Can apache handle this itself??
+
+        // act
+
+        // assert
+        fail 'write this'
     }
 }
