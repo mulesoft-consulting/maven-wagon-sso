@@ -28,6 +28,10 @@ class WinSSOFriendlyHttpWagonTest {
     @Before
     void cleanup() {
         this.startedServers = []
+        if (System.getProperty('SKIP_REPO_CLEAN')) {
+            println '***********Skipping repo clean!'
+            return
+        }
         def repoDir = new File(tmpDir, 'repoDir')
         if (repoDir.exists()) {
             assert repoDir.deleteDir()
@@ -267,15 +271,18 @@ class WinSSOFriendlyHttpWagonTest {
     void deploy() {
         // arrange
         List<String> postedUrls = []
-        List<String> httpVerbs = []
         httpServer.requestHandler { HttpServerRequest request ->
-            httpVerbs << request.method().name()
             def uri = request.absoluteURI()
-            println "Got POST ${uri}..."
-            postedUrls << uri
-            request.bodyHandler { Buffer buffer ->
-            }
             request.response().with {
+                if (request.method().name() == 'GET' && uri.contains('maven-metadata.xml')) {
+                    statusCode = 404
+                    end()
+                    return
+                }
+                println "Got POST ${uri}..."
+                postedUrls << uri
+                request.bodyHandler { Buffer buffer ->
+                }
                 statusCode = 201
                 end()
             }
@@ -288,8 +295,6 @@ class WinSSOFriendlyHttpWagonTest {
                  'deploy'
 
         // assert
-        assertThat httpVerbs.unique(),
-                   is(equalTo(['POST']))
         fail 'write this'
     }
 }
