@@ -55,7 +55,15 @@ assert mavenMatcher.find()
 def mavenHome = mavenMatcher.group(1)
 println "Derived Maven home directory as '${mavenHome}'"
 
+def jarFile = jar.outputs.files[0]
+def libExt = new File(new File(mavenHome, 'lib'), 'ext')
 task install(type: Copy, dependsOn: jar) {
-    from jar.outputs.files[0]
-    into new File(new File(mavenHome, 'lib'), 'ext')
+    description 'Installs the wagon JAR into your Maven home directory'
+    from jarFile
+    into libExt
+}
+
+task uninstall(type: Delete) {
+    description 'Uninstalls the wagon JAR from your Maven home directory'
+    delete new File(libExt, jarFile.name)
 }
