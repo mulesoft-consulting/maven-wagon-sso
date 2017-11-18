@@ -4,7 +4,6 @@ import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.HttpServer
 import io.vertx.core.http.HttpServerRequest
-import io.vertx.ext.web.impl.Utils
 import org.apache.tools.ant.taskdefs.condition.Os
 import org.codehaus.plexus.util.FileUtils
 import org.junit.*
@@ -311,7 +310,7 @@ class WinSSOFriendlyHttpWagonTest {
                  'pom_madeupdependency.xml',
                  'clean',
                  'compile',
-                '-U'
+                 '-U'
 
         // assert
     }
