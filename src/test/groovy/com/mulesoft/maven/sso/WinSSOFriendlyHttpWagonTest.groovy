@@ -232,6 +232,39 @@ class WinSSOFriendlyHttpWagonTest {
     @Test
     void proxyFetch_Bypass() {
         // arrange
+        httpServer.requestHandler { HttpServerRequest request ->
+            def uri = request.absoluteURI()
+            request.response().with {
+                // we're more interested in the request than what Maven does with the response
+                statusCode = 404
+                end()
+            }
+        }.listen(8081, 'localhost')
+        List<String> proxyUrls = []
+        List<String> proxyHostHeaders = []
+        httpServer.requestHandler { HttpServerRequest request ->
+            def uri = request.absoluteURI()
+            proxyUrls << uri
+            proxyHostHeaders << request.getHeader('Host')
+            request.response().with {
+                statusCode = 404
+                end()
+            }
+        }.listen(8082, 'localhost')
+
+        // act
+        // we won't fail this time because we exclude Maven central from being proxied
+        // but we do still proxy our localhost repo
+        runMaven 'proxy_settings_bypass.xml'
+
+        // assert
+        assertThat proxyHostHeaders.unique(),
+                   is(equalTo(['localhost:8081']))
+    }
+
+    @Test
+    void deploy() {
+        // arrange
 
         // act
 
