@@ -24,6 +24,7 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
     private CloseableHttpClient httpClient
     private boolean closed
     String samlIdpUrl
+
     private static final int MAX_BACKOFF_WAIT_SECONDS = Integer.parseInt(
             System.getProperty("maven.wagon.httpconnectionManager.maxBackoffSeconds", "180"))
     private int initialBackoffSeconds = Integer.parseInt(
@@ -39,7 +40,6 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
             202: 1,
             204: 1
     ]
-
 
     @Override
     void fillInputData(InputData inputData)
