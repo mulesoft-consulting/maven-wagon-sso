@@ -9,12 +9,14 @@ import org.apache.http.client.utils.URIBuilder
 import org.apache.http.entity.InputStreamEntity
 import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.impl.client.WinHttpClients
+import org.apache.http.message.BasicHeader
 import org.apache.maven.wagon.*
 import org.apache.maven.wagon.authentication.AuthenticationException
 import org.apache.maven.wagon.authorization.AuthorizationException
 import org.apache.maven.wagon.events.TransferEvent
 import org.apache.maven.wagon.resource.Resource
 
+import java.text.SimpleDateFormat
 import java.util.concurrent.TimeUnit
 
 class WinSSOFriendlyHttpWagon extends StreamWagon {
@@ -26,6 +28,7 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
             System.getProperty("maven.wagon.httpconnectionManager.maxBackoffSeconds", "180"))
     private int initialBackoffSeconds = Integer.parseInt(
             System.getProperty("maven.wagon.httpconnectionManager.backoffSeconds", "5"))
+    private static final TimeZone GMT_TIME_ZONE = TimeZone.getTimeZone("GMT")
 
     @Override
     void fillInputData(InputData inputData)
@@ -38,6 +41,14 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
         def resource = inputData.resource
         def url = new URIBuilder(repository.url + "/" + resource).build().toString()
         def get = new HttpGet(url)
+        long timestamp = resource.getLastModified()
+        if (timestamp > 0L) {
+            SimpleDateFormat fmt = new SimpleDateFormat("EEE, dd-MMM-yy HH:mm:ss zzz", Locale.US)
+            fmt.setTimeZone(GMT_TIME_ZONE)
+            def hdr = new BasicHeader("If-Modified-Since", fmt.format(new Date(timestamp)))
+            this.fireTransferDebug("sending ==> " + hdr + "(" + timestamp + ")")
+            get.addHeader(hdr)
+        }
         try {
             def response = httpClient.execute(get)
             def validateResult = validateResponse(url,
@@ -76,7 +87,6 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
         this.fireTransferDebug(url + " - Status code: " + statusCode + reasonPhrase)
         switch (statusCode) {
             case 304:
-                assert false: 'not modified! how do we handle this?'
                 break
             case 401:
                 this.fireSessionConnectionRefused()
@@ -206,4 +216,9 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
         }
     }
 
+    @Override
+    boolean resourceExists(String resourceName) throws TransferFailedException, AuthorizationException {
+        println '-----------------------hey-------------'
+        throw new UnsupportedOperationException("The wagon you are using has not implemented resourceExists()");
+    }
 }

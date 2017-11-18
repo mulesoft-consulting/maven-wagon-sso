@@ -4,6 +4,7 @@ import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.HttpServer
 import io.vertx.core.http.HttpServerRequest
+import io.vertx.ext.web.impl.Utils
 import org.apache.tools.ant.taskdefs.condition.Os
 import org.codehaus.plexus.util.FileUtils
 import org.junit.*
@@ -20,6 +21,7 @@ class WinSSOFriendlyHttpWagonTest {
     List<HttpServer> startedServers
     static File tmpDir = new File('tmp')
     static File scratchPad = new File(tmpDir, 'scratchpad')
+    static File testResources = getFile('src', 'test', 'resources')
 
     @BeforeClass
     static void setup() {
@@ -110,18 +112,23 @@ class WinSSOFriendlyHttpWagonTest {
     }
 
     static File getFile(String... parts) {
-        parts.inject { existing, part ->
-            def parent = existing instanceof String ? new File(existing) : existing
-            new File(parent, part)
+        getFile(new File(parts[0]),
+                *parts[1..-1].toArray())
+    }
+
+    static File getFile(File file,
+                        String... parts) {
+        parts.inject(file) { File existing, String part ->
+            new File(existing, part)
         }
     }
 
     static void runMaven(String settingsFilename,
                          String pomFileName = 'pom_1_repo.xml',
                          String... goals = ['clean']) {
-        def settings = getFile('src', 'test', 'resources', settingsFilename)
+        def settings = getFile(testResources, settingsFilename)
         assert settings.exists()
-        def project = getFile('src', 'test', 'resources', pomFileName)
+        def project = getFile(testResources, pomFileName)
         assert project.exists()
         executeMavenPhaseOrGoal(
                 "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -e -B",
@@ -209,14 +216,78 @@ class WinSSOFriendlyHttpWagonTest {
     }
 
     @Test
-    @Ignore('write these')
     void simpleFetch_not_modified_304() {
         // arrange
+        List<String> requestedUrls = []
+        def firstCall = false
+
+        def lastModifiedDate = 'Wed, 21 Oct 2015 07:28:00 GMT'
+        httpServer.requestHandler { HttpServerRequest request ->
+            def uri = request.absoluteURI()
+            println "Fake server got URL ${uri}"
+            println "Headers:"
+            request.headers().each { kvp ->
+                println "Key ${kvp.key} value ${kvp.value}"
+            }
+            println "End headers"
+            requestedUrls << uri
+            request.response().with {
+                if (uri.contains('maven-metadata.xml')) {
+                    statusCode = 200
+                    if (uri.endsWith('sha1')) {
+                        end('dbd5c806a03197aff7179d49f2b7db586887e8a7')
+                        return
+                    }
+                    if (firstCall) {
+                        println "returning 304,"
+                        statusCode = 304
+                        putHeader('Last-Modified', lastModifiedDate)
+                        end()
+                        return
+                    }
+                    println 'Returning first pass of metadata'
+                    firstCall = true
+                    def file = new File(testResources, 'simple_pom_artifact_metadata.xml')
+                    assert file.exists()
+                    end(file.text)
+                    return
+                }
+                if (uri.contains('test.artifact')) {
+                    if (uri.endsWith('sha1')) {
+                        statusCode = 200
+                        end('1c60353fb663ddec3c69fe6436146a5172ad1b0f')
+                        return
+                    }
+                    println "returning first pass of POM"
+                    statusCode = 200
+                    putHeader('Content-Type', 'application/xml')
+                    putHeader('Last-Modified', lastModifiedDate)
+                    def responseText = new File(testResources, 'simple_pom_artifact.xml')
+                    assert responseText.exists()
+                    end(responseText.text)
+                    return
+                }
+                // we're more interested in the request than what Maven does with the response
+                statusCode = 404
+                end()
+            }
+        }.listen(8081, 'localhost')
+        // get the artifact locally
+        runMaven 'simple_settings.xml',
+                 'pom_304test.xml',
+                 'clean',
+                 'compile'
 
         // act
+        println '-------------------------------2nd Maven run----------------------------------------'
+        // should not cause issues when we run again
+        runMaven 'simple_settings.xml',
+                 'pom_304test.xml',
+                 'clean',
+                 'compile',
+                '-U'
 
         // assert
-        fail 'write this'
     }
 
     @Test
@@ -353,6 +424,17 @@ class WinSSOFriendlyHttpWagonTest {
     void deploy_too_many_429() {
         // arrange
         // TODO: Can apache handle this itself??
+
+        // act
+
+        // assert
+        fail 'write this'
+    }
+
+    @Test
+    @Ignore('write these')
+    void resourceExists() {
+        // arrange
 
         // act
 
