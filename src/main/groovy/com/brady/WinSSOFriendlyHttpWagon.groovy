@@ -6,7 +6,7 @@ import org.apache.maven.wagon.*
 import org.apache.maven.wagon.authentication.AuthenticationException
 import org.apache.maven.wagon.authorization.AuthorizationException
 
-class WinSSOFriendlyWagon extends StreamWagon {
+class WinSSOFriendlyHttpWagon extends StreamWagon {
     // this class is instantiated for each repository
     private CloseableHttpClient httpClient
     private boolean closed
