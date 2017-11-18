@@ -121,7 +121,7 @@ class WinSSOFriendlyHttpWagonTest {
     }
 
     @Test
-    void simpleFetch_404() {
+    void simpleFetch() {
         // arrange
         List<String> requestedUrls = []
         httpServer.requestHandler { HttpServerRequest request ->
@@ -183,5 +183,39 @@ class WinSSOFriendlyHttpWagonTest {
 
         // assert
         assert spNegoToken
+    }
+
+    @Test
+    void proxyFetch() {
+        // arrange
+        List<String> requestedUrls = []
+        httpServer.requestHandler { HttpServerRequest request ->
+            def uri = request.absoluteURI()
+            requestedUrls << uri
+            request.response().with {
+                // we're more interested in the request than what Maven does with the response
+                statusCode = 404
+                end()
+            }
+        }.listen(8081, 'localhost')
+        List<String> proxyUrls = []
+        httpServer.requestHandler { HttpServerRequest request ->
+            proxyUrls << request.absoluteURI()
+            request.response().with {
+                statusCode = 200
+                end()
+            }
+        }.listen(8082, 'localhost')
+
+        // act
+        runMaven 'proxy_settings.xml'
+
+        // assert
+        assertThat 'Expected URLs to run through our repo!',
+                   requestedUrls.any(),
+                   is(equalTo(true))
+        assertThat proxyUrls,
+                   is(equalTo(['foo']))
+        fail 'write this'
     }
 }
