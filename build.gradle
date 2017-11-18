@@ -27,22 +27,17 @@ repositories {
     mavenCentral()
 }
 
-// TODO: Windows friendly command execution
-def mvnVersionOutput = 'mvn --version'.execute().text
-def mavenMatcher = Pattern.compile(/(?m)^Maven home: (.*)$/).matcher(mvnVersionOutput)
-assert mavenMatcher.find()
-def mavenHome = mavenMatcher.group(1)
-println "Derived Maven home directory as '${mavenHome}'"
-
 dependencies {
     // Maven does not come with Groovy
     compile "org.codehaus.groovy:groovy-all:2.4.6"
     // is already built-in to Maven
     provided 'org.apache.maven.wagon:wagon-provider-api:2.12'
+    // we need 4.5.3 to get Windows SPNEGO friendly auth. Maven 3.5.0 already includes base 4.5.3
+    // but not the Windows pieces, so add that here
+    def httpClientVersion = '4.5.3'
+    compile "org.apache.httpcomponents:httpclient:${httpClientVersion}"
+    compile "org.apache.httpcomponents:httpclient-win:${httpClientVersion}"
     // TODO: Windows friendly slashes??
-    // the only way to get the shaded dependency that we must depend on, it also already includes
-    // Apache's 4.5 HTTP client
-    provided files("${mavenHome}/lib/wagon-http-2.12-shaded.jar")
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
 
@@ -52,7 +47,14 @@ jar {
         configurations.compile.collect { z -> zipTree(z) }
     }
 }
-//println "output is ${new File(new File(buildDir.absolutePath, 'libs'), jar.outputs.files[0].name)}"
+
+// TODO: Windows friendly command execution to find Maven home
+def mvnVersionOutput = 'mvn --version'.execute().text
+def mavenMatcher = Pattern.compile(/(?m)^Maven home: (.*)$/).matcher(mvnVersionOutput)
+assert mavenMatcher.find()
+def mavenHome = mavenMatcher.group(1)
+println "Derived Maven home directory as '${mavenHome}'"
+
 task install(type: Copy, dependsOn: jar) {
     from jar.outputs.files[0]
     into new File(new File(mavenHome, 'lib'), 'ext')
