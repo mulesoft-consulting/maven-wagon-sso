@@ -29,7 +29,6 @@ repositories {
 
 // TODO: Windows friendly command execution
 def mvnVersionOutput = 'mvn --version'.execute().text
-println "Raw ${mvnVersionOutput}"
 def mavenMatcher = Pattern.compile(/(?m)^Maven home: (.*)$/).matcher(mvnVersionOutput)
 assert mavenMatcher.find()
 def mavenHome = mavenMatcher.group(1)
