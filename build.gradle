@@ -1,3 +1,5 @@
+import java.util.regex.Pattern
+
 group 'com.brady'
 version '1.0-SNAPSHOT'
 
@@ -26,14 +28,22 @@ repositories {
     mavenCentral()
 }
 
+// TODO: Windows friendly command execution
+def mvnVersionOutput = 'mvn --version'.execute().text
+println "Raw ${mvnVersionOutput}"
+def mavenMatcher = Pattern.compile(/(?m)^Maven home: (.*)$/).matcher(mvnVersionOutput)
+assert mavenMatcher.find()
+def mavenHome = mavenMatcher.group(1)
+println "Derived Maven home directory as '${mavenHome}'"
+
 dependencies {
     compile "org.codehaus.groovy:groovy-all:2.4.6"
     // is already built-in to Maven
     provided 'org.apache.maven.wagon:wagon-provider-api:2.12'
-    // TODO: Don't hard code the Maven path
+    // TODO: Windows friendly slashes??
     // the only way to get the shaded dependency that we must depend on, it also already includes
     // Apache's 4.5 HTTP client
-    provided files('/usr/local/Cellar/maven/3.5.0//libexec/lib/wagon-http-2.12-shaded.jar')
+    provided files("${mavenHome}/lib/wagon-http-2.12-shaded.jar")
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
 
