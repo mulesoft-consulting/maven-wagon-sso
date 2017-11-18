@@ -1,6 +1,7 @@
 package com.mulesoft.maven.sso
 
 import io.vertx.core.Vertx
+import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.HttpServer
 import io.vertx.core.http.HttpServerRequest
 import org.apache.tools.ant.taskdefs.condition.Os
@@ -263,13 +264,32 @@ class WinSSOFriendlyHttpWagonTest {
     }
 
     @Test
-    @Ignore('TODO: Implement this')
     void deploy() {
         // arrange
+        List<String> postedUrls = []
+        List<String> httpVerbs = []
+        httpServer.requestHandler { HttpServerRequest request ->
+            httpVerbs << request.method().name()
+            def uri = request.absoluteURI()
+            println "Got POST ${uri}..."
+            postedUrls << uri
+            request.bodyHandler { Buffer buffer ->
+            }
+            request.response().with {
+                statusCode = 201
+                end()
+            }
+        }.listen(8081, 'localhost')
 
         // act
+        runMaven 'simple_settings.xml',
+                 'simple_upload_artifact.xml',
+                 'clean',
+                 'deploy'
 
         // assert
+        assertThat httpVerbs.unique(),
+                   is(equalTo(['POST']))
         fail 'write this'
     }
 }
