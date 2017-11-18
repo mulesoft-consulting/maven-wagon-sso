@@ -4,10 +4,7 @@ import io.vertx.core.Vertx
 import io.vertx.core.http.HttpServer
 import io.vertx.core.http.HttpServerRequest
 import org.codehaus.plexus.util.FileUtils
-import org.junit.After
-import org.junit.Before
-import org.junit.BeforeClass
-import org.junit.Test
+import org.junit.*
 
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.is
@@ -40,6 +37,12 @@ class WinSSOFriendlyHttpWagonTest {
             println "Closing server ${server}..."
             server.close()
         }
+    }
+
+    HttpServer getHttpServer() {
+        def httpServer = Vertx.vertx().createHttpServer()
+        startedServers << httpServer
+        httpServer
     }
 
     static void downloadMaven() {
@@ -101,20 +104,24 @@ class WinSSOFriendlyHttpWagonTest {
         }
     }
 
-    void runMaven(String settingsFilename) {
+    static void runMaven(String settingsFilename,
+                         String pomFileName = 'pom_1_repo.xml',
+                         String... goals = ['clean']) {
         def settings = getFile('src', 'test', 'resources', settingsFilename)
         assert settings.exists()
-        def project = getFile('src', 'test', 'resources', 'pom_1_repo.xml')
+        def project = getFile('src', 'test', 'resources', pomFileName)
         assert project.exists()
-        executeMavenPhaseOrGoal("-s ${settings.absolutePath}",
-                                "-f ${project.absolutePath}",
-                                'clean')
+        executeMavenPhaseOrGoal(
+                "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -e -B",
+                // quiet things down
+                "-s ${settings.absolutePath}",
+                "-f ${project.absolutePath}",
+                *goals)
     }
 
     @Test
     void simpleFetch_404() {
         // arrange
-        def httpServer = Vertx.vertx().createHttpServer()
         List<String> requestedUrls = []
         httpServer.requestHandler { HttpServerRequest request ->
             def uri = request.absoluteURI()
@@ -125,7 +132,6 @@ class WinSSOFriendlyHttpWagonTest {
                 end()
             }
         }.listen(8081, 'localhost')
-        this.startedServers << httpServer
 
         // act
         runMaven 'simple_settings.xml'
@@ -134,5 +140,45 @@ class WinSSOFriendlyHttpWagonTest {
         assertThat 'Expected URLs to run through our repo!',
                    requestedUrls.any(),
                    is(equalTo(true))
+    }
+
+    @Test
+    @Ignore('Need Windows to run this one')
+    void simpleFetch_spnego() {
+        // arrange
+        def challengedOnce = false
+        String spNegoToken = null
+        httpServer.requestHandler { HttpServerRequest request ->
+            def uri = request.absoluteURI()
+            request.response().with {
+                if (uri.contains('some.dependency')) {
+                    if (challengedOnce) {
+                        statusCode = 200
+                        spNegoToken = request.getHeader('Authorization')
+                        // TODO: Add POM contents in here (No JAR will make it easier)
+                        end()
+                    } else {
+                        challengedOnce = true
+                        println "Triggering SPNEGO challenge/401 for ${uri}"
+                        statusCode = 401
+                        putHeader('WWW-Authenticate', 'Negotiate')
+                        end()
+                    }
+                } else {
+                    // just test a single plugin
+                    statusCode = 404
+                    end()
+                }
+            }
+        }.listen(8081, 'localhost')
+
+        // act
+        runMaven 'simple_settings.xml',
+                 'pom_unknown_dependency.xml',
+                 'clean',
+                 'compile'
+
+        // assert
+        assert spNegoToken
     }
 }

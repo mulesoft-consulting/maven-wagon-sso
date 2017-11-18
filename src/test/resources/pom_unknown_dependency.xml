@@ -8,12 +8,20 @@
     <version>1.0.0-SNAPSHOT</version>
     <name>Sample project</name>
 
-    <pluginRepositories>
-        <pluginRepository>
+    <dependencies>
+        <dependency>
+            <groupId>some.group.id</groupId>
+            <artifactId>some.dependency</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+    </dependencies>
+
+    <repositories>
+        <repository>
             <id>some-repo</id>
             <name>Our repo</name>
             <url>http://localhost:8081/repo</url>
             <layout>default</layout>
-        </pluginRepository>
-    </pluginRepositories>
+        </repository>
+    </repositories>
 </project>
