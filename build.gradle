@@ -37,6 +37,7 @@ def mavenHome = mavenMatcher.group(1)
 println "Derived Maven home directory as '${mavenHome}'"
 
 dependencies {
+    // Maven does not come with Groovy
     compile "org.codehaus.groovy:groovy-all:2.4.6"
     // is already built-in to Maven
     provided 'org.apache.maven.wagon:wagon-provider-api:2.12'
@@ -49,7 +50,7 @@ dependencies {
 
 jar {
     from {
-        // Maven comes with
+        // Maven comes with everything marked provided above
         configurations.compile.collect { z -> zipTree(z) }
     }
 }
