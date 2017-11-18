@@ -126,11 +126,13 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
         // some proxies won't accept outbound traffic without a user agent
         builder.userAgent = 'AHC'
         def proxyInfo = getProxyInfo()
+        if (proxyInfo) {
+            builder.routePlanner = new ProxyRoutePlanner(proxyInfo)
+        }
         // this will get set by doing this, can control which repos we try and do SAML idp stuff for
 //        <configuration>
 //        <samlIdpUrl>true</samlIdpUrl>
 //        </configuration>
-        // TODO: Add proxy config/route planner here
         // TODO: Also need to add an interceptor to get the SAML token, etc. when appropriate
         // TODO: Need to figure out how to set basic auth credentials for every request w/ httpclient
         httpClient = builder.build()

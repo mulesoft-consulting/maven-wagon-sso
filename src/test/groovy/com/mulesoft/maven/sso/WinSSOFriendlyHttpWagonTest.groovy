@@ -7,6 +7,7 @@ import org.apache.tools.ant.taskdefs.condition.Os
 import org.codehaus.plexus.util.FileUtils
 import org.junit.*
 
+import static groovy.test.GroovyAssert.shouldFail
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.is
 import static org.junit.Assert.assertThat
@@ -199,24 +200,33 @@ class WinSSOFriendlyHttpWagonTest {
             }
         }.listen(8081, 'localhost')
         List<String> proxyUrls = []
+        List<String> proxyHostHeaders = []
         httpServer.requestHandler { HttpServerRequest request ->
-            proxyUrls << request.absoluteURI()
+            def uri = request.absoluteURI()
+            proxyUrls << uri
+            proxyHostHeaders << request.getHeader('Host')
             request.response().with {
-                statusCode = 200
+                statusCode = 404
                 end()
             }
         }.listen(8082, 'localhost')
 
         // act
-        runMaven 'proxy_settings.xml'
+        // we won't try and mimic the actual POM, we're just interested in the request
+        shouldFail {
+            runMaven 'proxy_settings.xml'
+        }
 
         // assert
-        assertThat 'Expected URLs to run through our repo!',
+        assertThat "Expected NO URLs to run through our repo! ${requestedUrls}",
                    requestedUrls.any(),
+                   is(equalTo(false))
+        assertThat "Expected ${proxyUrls} to have clean plugin!",
+                   proxyUrls.contains(
+                           'http://localhost:8081/repo/org/apache/maven/plugins/maven-clean-plugin/2.5/maven-clean-plugin-2.5.pom'),
                    is(equalTo(true))
-        assertThat proxyUrls,
-                   is(equalTo(['foo']))
-        fail 'write this'
+        assertThat proxyHostHeaders.unique(),
+                   is(equalTo(['localhost:8081', 'repo.maven.apache.org']))
     }
 
     @Test
