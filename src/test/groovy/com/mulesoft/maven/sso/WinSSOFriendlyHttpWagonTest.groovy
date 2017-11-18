@@ -1,22 +1,28 @@
 package com.mulesoft.maven.sso
 
+import org.codehaus.plexus.util.FileUtils
 import org.junit.BeforeClass
 import org.junit.Test
 
 class WinSSOFriendlyHttpWagonTest {
-    static String mvnPath
+    static String mvnExecutablePath
+    static File mavenDir
 
     @BeforeClass
+    static void setup() {
+        downloadMaven()
+        copyJar()
+    }
+
     static void downloadMaven() {
         def mavenUrl = 'http://www-us.apache.org/dist/maven/maven-3/3.5.2/binaries/apache-maven-3.5.2-bin.zip'
         def tmpDir = new File('tmp')
         if (!tmpDir.exists()) {
             tmpDir.mkdirs()
         }
-        def mavenDir = new File(tmpDir, 'apache-maven-3.5.2')
+        mavenDir = new File(tmpDir, 'apache-maven-3.5.2')
         def binDir = new File(mavenDir, 'bin')
-        assert binDir.exists()
-        mvnPath = new File(binDir, 'mvn').absolutePath
+        mvnExecutablePath = new File(binDir, 'mvn').absolutePath
         if (mavenDir.exists()) {
             executeMavenPhaseOrGoal('--version')
             println 'Maven already ready to go!'
@@ -31,15 +37,33 @@ class WinSSOFriendlyHttpWagonTest {
         antBuilder.unzip(src: zipFile.absolutePath,
                          dest: tmpDir)
         assert zipFile.delete()
+        assert binDir.exists()
         println "Maven unzipped at ${mavenDir}, testing"
         executeMavenPhaseOrGoal('--version')
     }
 
     static void executeMavenPhaseOrGoal(String... goals) {
-        def command = "sh ${mvnPath} ${goals.join(' ')}"
+        def command = "sh ${mvnExecutablePath} ${goals.join(' ')}"
         def result = command.execute()
         result.waitForProcessOutput(System.out, System.err)
         assert result.exitValue() == 0
+    }
+
+    static void copyJar() {
+        def libDir = new File(mavenDir, 'lib')
+        assert libDir.exists()
+        def extDir = new File(libDir, 'ext')
+        assert extDir.exists()
+        println 'Building JAR via Gradle...'
+        def result = 'sh gradlew jar'.execute()
+        result.waitForProcessOutput(System.out, System.err)
+        assert result.exitValue() == 0
+        def jarFiles = new FileNameFinder().getFileNames('build/libs', '**/*.jar')
+        assert jarFiles.size() == 1
+        def jarFile = new File(jarFiles[0])
+        assert jarFile.exists()
+        println "Copying built JAR ${jarFile} into ${extDir}"
+        FileUtils.copyFileToDirectory(jarFile, extDir)
     }
 
     @Test
