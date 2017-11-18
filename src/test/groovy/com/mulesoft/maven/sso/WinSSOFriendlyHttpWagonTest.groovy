@@ -44,6 +44,7 @@ class WinSSOFriendlyHttpWagonTest {
 
     static void executeMavenPhaseOrGoal(String... goals) {
         def command = "sh ${mvnExecutablePath} ${goals.join(' ')}"
+        println "Running Maven command: '${command}'"
         def result = command.execute()
         result.waitForProcessOutput(System.out, System.err)
         assert result.exitValue() == 0
@@ -66,11 +67,27 @@ class WinSSOFriendlyHttpWagonTest {
         FileUtils.copyFileToDirectory(jarFile, extDir)
     }
 
+    static File getFile(String... parts) {
+        parts.inject { existing, part ->
+            def parent = existing instanceof String ? new File(existing) : existing
+            new File(parent, part)
+        }
+    }
+
     @Test
-    void doStuff() {
+    void simpleFetch() {
         // arrange
+        def settings = getFile('src', 'test', 'resources', 'simple_settings.xml')
+        assert settings.exists()
+        def project = getFile('src', 'test', 'resources', 'theProjectPom.xml')
+        assert project.exists()
 
         // act
+        executeMavenPhaseOrGoal("-s ${settings.absolutePath}",
+                                "-f ${project.absolutePath}",
+                                '-U', // forces a repo fetch
+                                'clean',
+                                'compile')
 
         // assert
         fail 'write this'
