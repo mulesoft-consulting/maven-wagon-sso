@@ -7,14 +7,15 @@ import org.apache.maven.wagon.authentication.AuthenticationException
 import org.apache.maven.wagon.authorization.AuthorizationException
 
 class WinSSOFriendlyWagon extends StreamWagon {
-    // this class is instantiated for each repo
+    // this class is instantiated for each repository
     private CloseableHttpClient httpClient
     private boolean closed
+    String samlIdpUrl
 
     @Override
     void fillInputData(
             InputData inputData) throws TransferFailedException, ResourceDoesNotExistException, AuthorizationException {
-        println "in theory we would do something in inputData here for - ${inputData.resource}"
+        println "in theory we would execute a request here for - ${inputData.resource}"
     }
 
     @Override
@@ -29,8 +30,15 @@ class WinSSOFriendlyWagon extends StreamWagon {
         // some proxies won't accept outbound traffic without a user agent
         builder.userAgent = 'AHC'
         def proxyInfo = getProxyInfo()
+        // this will get set by doing this, can control which repos we try and do SAML idp stuff for
+//        <configuration>
+//        <samlIdpUrl>true</samlIdpUrl>
+//        </configuration>
+        println "repo param ${samlIdpUrl}"
         println "proxy info for repo ${repository} is ${proxyInfo}"
         // TODO: Add proxy config/route planner here
+        // TODO: Also need to add an interceptor to get the SAML token, etc. when appropriate
+        // TODO: Need to figure out how to set basic auth credentials for every request w/ httpclient
         httpClient = builder.build()
     }
 
