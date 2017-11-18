@@ -9,7 +9,6 @@ configurations {
 
 apply plugin: 'java'
 apply plugin: 'groovy'
-apply plugin: 'maven'
 
 sourceSets {
     main {
@@ -53,4 +52,9 @@ jar {
         // Maven comes with everything marked provided above
         configurations.compile.collect { z -> zipTree(z) }
     }
+}
+//println "output is ${new File(new File(buildDir.absolutePath, 'libs'), jar.outputs.files[0].name)}"
+task install(type: Copy, dependsOn: jar) {
+    from jar.outputs.files[0]
+    into new File(new File(mavenHome, 'lib'), 'ext')
 }

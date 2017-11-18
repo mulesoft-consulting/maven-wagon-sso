@@ -8,7 +8,7 @@ import org.apache.maven.wagon.providers.http.httpclient.client.methods.HttpUriRe
 class BradyWagon extends HttpWagon {
     @Override
     protected CloseableHttpResponse execute(HttpUriRequest httpMethod) throws HttpException, IOException {
-        throw new Exception('brady Groovy')
+        throw new Exception('brady Groovy2')
         return super.execute(httpMethod)
     }
 }
