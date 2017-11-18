@@ -45,6 +45,7 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
     @Override
     void closeConnection() throws ConnectionException {
         if (!closed) {
+            println "Closing client for repo ${repository}"
             httpClient.close()
             closed = true
         }
