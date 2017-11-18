@@ -171,31 +171,57 @@ class WinSSOFriendlyHttpWagonTest {
         String spNegoToken = null
         httpServer.requestHandler { HttpServerRequest request ->
             def uri = request.absoluteURI()
+            println "Fake server got URL ${uri}"
+            println "Headers:"
+            request.headers().each { kvp ->
+                println "Key ${kvp.key} value ${kvp.value}"
+            }
+            println "End headers"
             request.response().with {
-                if (uri.contains('some.dependency')) {
+                if (uri.endsWith('maven-metadata.xml')) {
                     if (challengedOnce) {
                         statusCode = 200
                         spNegoToken = request.getHeader('Authorization')
-                        // TODO: Add POM contents in here (No JAR will make it easier)
-                        end()
-                    } else {
-                        challengedOnce = true
-                        println "Triggering SPNEGO challenge/401 for ${uri}"
-                        statusCode = 401
-                        putHeader('WWW-Authenticate', 'Negotiate')
-                        end()
+                        def file = new File(testResources, 'simple_pom_artifact_metadata.xml')
+                        assert file.exists()
+                        end(file.text)
+                        return
                     }
-                } else {
-                    // just test a single plugin
-                    statusCode = 404
+                    challengedOnce = true
+                    println "Triggering SPNEGO challenge/401 for ${uri}"
+                    statusCode = 401
+                    putHeader('WWW-Authenticate', 'Negotiate')
                     end()
+                    return
                 }
+                if (uri.endsWith('sha1')) {
+                    statusCode = 200
+                    end('dbd5c806a03197aff7179d49f2b7db586887e8a7')
+                    return
+                }
+                if (uri.contains('test.artifact')) {
+                    if (uri.endsWith('sha1')) {
+                        statusCode = 200
+                        end('1c60353fb663ddec3c69fe6436146a5172ad1b0f')
+                        return
+                    }
+                    println "returning first pass of POM"
+                    statusCode = 200
+                    putHeader('Content-Type', 'application/xml')
+                    def responseText = new File(testResources, 'simple_pom_artifact.xml')
+                    assert responseText.exists()
+                    end(responseText.text)
+                    return
+                }
+                // we're more interested in the request than what Maven does with the response
+                statusCode = 404
+                end()
             }
         }.listen(8081, 'localhost')
 
         // act
         runMaven 'simple_settings.xml',
-                 'pom_unknown_dependency.xml',
+                 'pom_madeupdependency.xml',
                  'clean',
                  'compile'
 
@@ -274,7 +300,7 @@ class WinSSOFriendlyHttpWagonTest {
         }.listen(8081, 'localhost')
         // get the artifact locally
         runMaven 'simple_settings.xml',
-                 'pom_304test.xml',
+                 'pom_madeupdependency.xml',
                  'clean',
                  'compile'
 
@@ -282,7 +308,7 @@ class WinSSOFriendlyHttpWagonTest {
         println '-------------------------------2nd Maven run----------------------------------------'
         // should not cause issues when we run again
         runMaven 'simple_settings.xml',
-                 'pom_304test.xml',
+                 'pom_madeupdependency.xml',
                  'clean',
                  'compile',
                 '-U'
