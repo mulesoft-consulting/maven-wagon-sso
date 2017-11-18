@@ -1,8 +1,23 @@
 group 'com.brady'
 version '1.0-SNAPSHOT'
 
+configurations {
+    provided
+}
+
 apply plugin: 'java'
-apply plugin: 'groovy'
+//apply plugin: 'groovy'
+apply plugin: 'maven'
+
+sourceSets {
+    main {
+        compileClasspath += configurations.provided
+    }
+    test {
+        compileClasspath += configurations.provided
+        runtimeClasspath += configurations.provided
+    }
+}
 
 sourceCompatibility = 1.8
 
@@ -12,8 +27,8 @@ repositories {
 }
 
 dependencies {
-    compile "org.codehaus.groovy:groovy-all:2.4.6"
-    compile 'org.apache.maven.plugin-tools:maven-plugin-annotations:3.5'
-    compile 'org.apache.maven:maven-project:3.0-alpha-2'
+    //compile "org.codehaus.groovy:groovy-all:2.4.6"
+    provided 'org.apache.maven.wagon:wagon-provider-api:2.12'
+    provided files('/usr/local/Cellar/maven/3.5.0//libexec/lib/wagon-http-2.12-shaded.jar')
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
