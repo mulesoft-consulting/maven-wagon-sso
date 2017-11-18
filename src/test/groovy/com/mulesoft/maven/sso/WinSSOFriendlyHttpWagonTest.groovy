@@ -1,12 +1,23 @@
 package com.mulesoft.maven.sso
 
+import io.vertx.core.Vertx
+import io.vertx.core.http.HttpServer
+import io.vertx.core.http.HttpServerRequest
 import org.codehaus.plexus.util.FileUtils
+import org.junit.After
+import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
+
+import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.is
+import static org.junit.Assert.assertThat
 
 class WinSSOFriendlyHttpWagonTest {
     static String mvnExecutablePath
     static File mavenDir
+    List<HttpServer> startedServers
+    static File tmpDir = new File('tmp')
 
     @BeforeClass
     static void setup() {
@@ -14,9 +25,25 @@ class WinSSOFriendlyHttpWagonTest {
         copyJar()
     }
 
+    @Before
+    void cleanup() {
+        this.startedServers = []
+        def repoDir = new File(tmpDir, 'repoDir')
+        if (repoDir.exists()) {
+            assert repoDir.deleteDir()
+        }
+    }
+
+    @After
+    void shutdownServers() {
+        this.startedServers.each { server ->
+            println "Closing server ${server}..."
+            server.close()
+        }
+    }
+
     static void downloadMaven() {
         def mavenUrl = 'http://www-us.apache.org/dist/maven/maven-3/3.5.2/binaries/apache-maven-3.5.2-bin.zip'
-        def tmpDir = new File('tmp')
         if (!tmpDir.exists()) {
             tmpDir.mkdirs()
         }
@@ -74,22 +101,38 @@ class WinSSOFriendlyHttpWagonTest {
         }
     }
 
-    @Test
-    void simpleFetch() {
-        // arrange
-        def settings = getFile('src', 'test', 'resources', 'simple_settings.xml')
+    void runMaven(String settingsFilename) {
+        def settings = getFile('src', 'test', 'resources', settingsFilename)
         assert settings.exists()
-        def project = getFile('src', 'test', 'resources', 'theProjectPom.xml')
+        def project = getFile('src', 'test', 'resources', 'pom_1_repo.xml')
         assert project.exists()
-
-        // act
         executeMavenPhaseOrGoal("-s ${settings.absolutePath}",
                                 "-f ${project.absolutePath}",
-                                '-U', // forces a repo fetch
-                                'clean',
-                                'compile')
+                                'clean')
+    }
+
+    @Test
+    void simpleFetch_404() {
+        // arrange
+        def httpServer = Vertx.vertx().createHttpServer()
+        List<String> requestedUrls = []
+        httpServer.requestHandler { HttpServerRequest request ->
+            def uri = request.absoluteURI()
+            requestedUrls << uri
+            request.response().with {
+                // we're more interested in the request than what Maven does with the response
+                statusCode = 404
+                end()
+            }
+        }.listen(8081, 'localhost')
+        this.startedServers << httpServer
+
+        // act
+        runMaven 'simple_settings.xml'
 
         // assert
-        fail 'write this'
+        assertThat 'Expected URLs to run through our repo!',
+                   requestedUrls.any(),
+                   is(equalTo(true))
     }
 }
