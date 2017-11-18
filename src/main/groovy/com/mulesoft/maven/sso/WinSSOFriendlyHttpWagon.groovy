@@ -1,4 +1,4 @@
-package com.brady
+package com.mulesoft.maven.sso
 
 import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.impl.client.WinHttpClients
