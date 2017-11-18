@@ -29,6 +29,17 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
     private int initialBackoffSeconds = Integer.parseInt(
             System.getProperty("maven.wagon.httpconnectionManager.backoffSeconds", "5"))
     private static final TimeZone GMT_TIME_ZONE = TimeZone.getTimeZone("GMT")
+    // map is more efficient to check than a list, value is meaningless
+    private static final Map<Integer, Integer> getSuccessCodes = [
+            200: 1
+    ]
+    private static final Map<Integer, Integer> postSuccessCodes = [
+            200: 1,
+            201: 1,
+            202: 1,
+            204: 1
+    ]
+
 
     @Override
     void fillInputData(InputData inputData)
@@ -54,7 +65,7 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
             def validateResult = validateResponse(url,
                                                   resource,
                                                   response,
-                                                  200) {
+                                                  getSuccessCodes) {
                 this.fillInputData(backoff(wait, url), inputData)
             }
             if (validateResult) {
@@ -80,7 +91,7 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
     private boolean validateResponse(String url,
                                      Resource resource,
                                      CloseableHttpResponse response,
-                                     int expectedSuccessCode,
+                                     Map<Integer,Integer> expectedSuccessCodes,
                                      Closure waitRetry) {
         def statusCode = response.getStatusLine().getStatusCode()
         def reasonPhrase = ", ReasonPhrase:" + response.getStatusLine().getReasonPhrase() + "."
@@ -103,7 +114,7 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
                 waitRetry()
                 break
             default:
-                if (statusCode == expectedSuccessCode) {
+                if (expectedSuccessCodes.containsKey(statusCode)) {
                     def contentLengthHeader = response.getFirstHeader("Content-Length")
                     if (contentLengthHeader != null) {
                         try {
@@ -164,7 +175,7 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
             validateResponse(url,
                              resource,
                              response,
-                             201) {
+                             postSuccessCodes) {
                 doPut(resource, source, backoff(wait, url))
             }
         }
