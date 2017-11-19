@@ -4,8 +4,9 @@ import org.apache.http.auth.AuthScope
 import org.apache.http.auth.Credentials
 import org.apache.http.auth.UsernamePasswordCredentials
 import org.apache.http.client.CredentialsProvider
+import org.apache.http.impl.client.BasicCredentialsProvider
 
-class AnypointTokenCredentialsProvider implements CredentialsProvider {
+class AnypointTokenCredentialsProvider extends BasicCredentialsProvider {
     private final CredentialsProvider existingProvider
     private final AccessTokenFetcher accessTokenFetcher
 
@@ -13,10 +14,10 @@ class AnypointTokenCredentialsProvider implements CredentialsProvider {
                                      AccessTokenFetcher accessTokenFetcher) {
         this.accessTokenFetcher = accessTokenFetcher
         this.existingProvider = existingProvider
-        println "existing provider ${existingProvider}"
     }
 
     // TODO: If it's not for our specific basic auth server, delegate to existingProvider if it exists
+    // if it is, call superclass
     @Override
     void setCredentials(AuthScope authScope, Credentials credentials) {
         println "set creds ${authScope} ${credentials}"
@@ -25,11 +26,12 @@ class AnypointTokenCredentialsProvider implements CredentialsProvider {
     // TODO: If it's not for our specific basic auth server, delegate to existingProvider
     @Override
     Credentials getCredentials(AuthScope authScope) {
+        // TODO: First check map, if not there, then use fetcher to get it and then set it
         println "get creds ${authScope}"
-        new UsernamePasswordCredentials('the_user', 'thePassword')
+        new UsernamePasswordCredentials('~~~Token~~~', 'abcdef')
     }
 
-    // TODO: If it's not for our specific basic auth server, delegate to existingProvider
+    // TODO: clear our own and delegate to existingProvider if it exists
     @Override
     void clear() {
 
