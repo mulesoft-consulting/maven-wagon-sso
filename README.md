@@ -49,6 +49,7 @@ To configure an Anypoint maven server, put something like this in settings.xml:
 # Design
 
 1. Used Groovy to code parts of this since it's SOOO much less verbose
+2. Maven's existing httpclient based wagon does not let you override how HttpClient is constructed or change credential behavior, so copied [original source](https://github.com/apache/maven-wagon/tree/wagon-2.12/wagon-providers/wagon-http/src/main/java/org/apache/maven/wagon/providers/http) and modified.
 
 # TODOs
 
