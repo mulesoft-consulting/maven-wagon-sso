@@ -639,6 +639,111 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
     }
 
     @Test
+    void samlFetch_expires() {
+        // arrange
+        List<String> requestedUrls = []
+        def expireCounter = 0
+        Exception exception = null
+        httpServer.requestHandler { HttpServerRequest request ->
+            def uri = request.absoluteURI()
+            def isArtifact2 = uri.contains('test.artifact2')
+            println "Fake server got URL ${uri}"
+            println "Headers:"
+            request.headers().each { kvp ->
+                println " Key ${kvp.key} value ${kvp.value}"
+            }
+            println "End headers"
+            requestedUrls << uri
+            request.response().with {
+                switch (uri) {
+                    case 'http://a_place_that_posts_saml_token/':
+                        statusCode = 200
+                        putHeader('Content-Type', 'text/html')
+                        def file = getFile(testResources, 'auto_post.html')
+                        end(file.text)
+                        return
+                    case 'http://anypoint.test.com/':
+                        statusCode = 200
+                        putHeader('Content-Type', 'text/html')
+                        putHeader('Set-Cookie', 'somestuff=somevalue')
+                        end('<foo/>')
+                        return
+                    case 'http://anypoint.test.com/profile_location/':
+                        if (request.getHeader('Cookie') != 'somestuff=somevalue') {
+                            println ' no cookie supplied, sending back 401'
+                            statusCode = 401
+                            end()
+                            return
+                        }
+                        statusCode = 200
+                        putHeader('Content-Type', 'application/json')
+                        def response = [
+                                access_token: expireCounter >= 2 ? 'foobar' : 'abcdef'
+                        ]
+                        end(JsonOutput.toJson(response))
+                        return
+                }
+                if (uri.contains('maven-metadata.xml')) {
+                    // Anypoint servers do not lock this down
+                    statusCode = 200
+                    if (uri.endsWith('sha1')) {
+                        end('dbd5c806a03197aff7179d49f2b7db586887e8a7')
+                        return
+                    }
+                    println 'Returning first pass of metadata'
+                    def file = new File(testResources, 'simple_pom_artifact_metadata.xml')
+                    assert file.exists()
+                    end(file.text)
+                    return
+                }
+                if (uri.contains('test.artifact')) {
+                    def expectedPassword = expireCounter >= 2 ? 'foobar' : 'abcdef'
+                    if (expireCounter >= 2 && !request.getHeader('Authorization')) {
+                        exception = new Exception('We stopped supplying auth altogether. Wagon scope issue?')
+                        exception.printStackTrace()
+                    }
+                    def expectedString = Base64.encoder.encodeToString("~~~Token~~~:${expectedPassword}".bytes)
+                    println "Expecting auth string '${expectedString}'"
+                    def authMatches = request.getHeader('Authorization') == "Basic ${expectedString}"
+                    if (!authMatches) {
+                        println ' Unauthorized, returning a 401'
+                        statusCode = 401
+                        putHeader('WWW-Authenticate', 'Basic realm="User Visible Realm"')
+                        end()
+                        return
+                    }
+                    expireCounter++
+                    if (uri.endsWith('sha1')) {
+                        statusCode = 200
+                        end('1c60353fb663ddec3c69fe6436146a5172ad1b0f')
+                        return
+                    }
+                    def pomFilename = isArtifact2 ? 'simple_pom_artifact2.xml' : 'simple_pom_artifact.xml'
+                    println "returning first pass of POM ${pomFilename}"
+                    statusCode = 200
+                    putHeader('Content-Type', 'application/xml')
+                    def responseText = new File(testResources, pomFilename)
+                    assert responseText.exists()
+                    end(responseText.text)
+                    return
+                }
+                // we're more interested in the request than what Maven does with the response
+                statusCode = 404
+                end()
+            }
+        }.listen(8081, 'localhost')
+
+        // act
+        runMaven 'saml_settings.xml',
+                 'pom_2madeupdependencies.xml',
+                 'clean',
+                 'compile'
+
+        // assert
+        assert !exception
+    }
+
+    @Test
     void creds_in_server_xml() {
         // arrange
 
