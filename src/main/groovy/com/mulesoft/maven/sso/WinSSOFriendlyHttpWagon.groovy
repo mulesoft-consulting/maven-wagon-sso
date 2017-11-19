@@ -206,7 +206,7 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
         def builder = WinHttpClients.custom()
         // some proxies won't accept outbound traffic without a user agent
         builder.userAgent = 'AHC'
-        def proxyInfo = getProxyInfo()
+        def proxyInfo = getProxyInfo(repository.protocol, repository.host)
         if (proxyInfo) {
             builder.routePlanner = new WagonProxyRoutePlanner(proxyInfo)
         }

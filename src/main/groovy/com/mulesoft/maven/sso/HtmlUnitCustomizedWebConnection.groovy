@@ -20,7 +20,7 @@ class HtmlUnitCustomizedWebConnection extends HttpWebConnection {
     protected HttpClientBuilder createHttpClient() {
         // handles SPNego, etc. for us
         def builder = WinHttpClients.custom()
-        builder.routePlanner = new HtmlUnitProxyRoutePlanner(proxyInfo)
+        builder.routePlanner = new WagonProxyInfoRoutePlanner(proxyInfo)
         builder.setRedirectStrategy(new HtmlUnitRedirectStrategie())
         builder.setMaxConnPerRoute(6)
         return builder
