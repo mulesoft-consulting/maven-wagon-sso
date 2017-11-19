@@ -32,6 +32,7 @@ dependencies {
     compile "org.codehaus.groovy:groovy-all:2.4.6"
     // is already built-in to Maven
     provided 'org.apache.maven.wagon:wagon-provider-api:2.12'
+    provided 'org.apache.maven.wagon:wagon-http:2.12'
     provided group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
     //compile files('/usr/local/Cellar/maven/3.5.0/libexec/lib/wagon-http-2.12-shaded.jar')
     // we need 4.5.3 to get Windows SPNEGO friendly auth. Maven 3.5.0 already includes base 4.5.3

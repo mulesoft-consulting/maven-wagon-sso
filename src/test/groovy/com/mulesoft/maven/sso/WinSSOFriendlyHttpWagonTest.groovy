@@ -2,17 +2,14 @@ package com.mulesoft.maven.sso
 
 import groovy.json.JsonOutput
 import io.vertx.core.Vertx
-import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.HttpServer
 import io.vertx.core.http.HttpServerRequest
 import org.apache.tools.ant.taskdefs.condition.Os
 import org.codehaus.plexus.util.FileUtils
 import org.junit.*
 
-import java.util.zip.ZipFile
-
-import static groovy.test.GroovyAssert.shouldFail
-import static org.hamcrest.Matchers.*
+import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.is
 import static org.junit.Assert.assertThat
 
 class WinSSOFriendlyHttpWagonTest implements FileHelper {
@@ -220,332 +217,6 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
     }
 
     @Test
-    @Ignore('write these')
-    void simpleFetch_too_many_429() {
-        // arrange
-        // TODO: Can apache handle this itself??
-
-        // act
-
-        // assert
-        fail 'write this'
-    }
-
-    @Test
-    void simpleFetch_not_modified_304() {
-        // arrange
-        List<String> requestedUrls = []
-        def firstCall = false
-
-        def lastModifiedDate = 'Wed, 21 Oct 2015 07:28:00 GMT'
-        httpServer.requestHandler { HttpServerRequest request ->
-            def uri = request.absoluteURI()
-            println "Fake server got URL ${uri}"
-            println "Headers:"
-            request.headers().each { kvp ->
-                println "Key ${kvp.key} value ${kvp.value}"
-            }
-            println "End headers"
-            requestedUrls << uri
-            request.response().with {
-                if (uri.contains('maven-metadata.xml')) {
-                    statusCode = 200
-                    if (uri.endsWith('sha1')) {
-                        end('dbd5c806a03197aff7179d49f2b7db586887e8a7')
-                        return
-                    }
-                    if (firstCall) {
-                        println "returning 304,"
-                        statusCode = 304
-                        putHeader('Last-Modified', lastModifiedDate)
-                        end()
-                        return
-                    }
-                    println 'Returning first pass of metadata'
-                    firstCall = true
-                    def file = new File(testResources, 'simple_pom_artifact_metadata.xml')
-                    assert file.exists()
-                    end(file.text)
-                    return
-                }
-                if (uri.contains('test.artifact')) {
-                    if (uri.endsWith('sha1')) {
-                        statusCode = 200
-                        end('1c60353fb663ddec3c69fe6436146a5172ad1b0f')
-                        return
-                    }
-                    println "returning first pass of POM"
-                    statusCode = 200
-                    putHeader('Content-Type', 'application/xml')
-                    putHeader('Last-Modified', lastModifiedDate)
-                    def responseText = new File(testResources, 'simple_pom_artifact.xml')
-                    assert responseText.exists()
-                    end(responseText.text)
-                    return
-                }
-                // we're more interested in the request than what Maven does with the response
-                statusCode = 404
-                end()
-            }
-        }.listen(8081, 'localhost')
-        // get the artifact locally
-        runMaven 'simple_settings.xml',
-                 'pom_madeupdependency.xml',
-                 'clean',
-                 'compile'
-
-        // act
-        println '-------------------------------2nd Maven run----------------------------------------'
-        // should not cause issues when we run again
-        runMaven 'simple_settings.xml',
-                 'pom_madeupdependency.xml',
-                 'clean',
-                 'compile',
-                 '-U'
-
-        // assert
-    }
-
-    @Test
-    void proxyFetch() {
-        // arrange
-        List<String> requestedUrls = []
-        httpServer.requestHandler { HttpServerRequest request ->
-            def uri = request.absoluteURI()
-            requestedUrls << uri
-            request.response().with {
-                // we're more interested in the request than what Maven does with the response
-                statusCode = 404
-                end()
-            }
-        }.listen(8081, 'localhost')
-        List<String> proxyUrls = []
-        List<String> proxyHostHeaders = []
-        httpServer.requestHandler { HttpServerRequest request ->
-            def uri = request.absoluteURI()
-            proxyUrls << uri
-            proxyHostHeaders << request.getHeader('Host')
-            request.response().with {
-                statusCode = 404
-                end()
-            }
-        }.listen(8082, 'localhost')
-
-        // act
-        // we won't try and mimic the actual POM, we're just interested in the request
-        shouldFail {
-            runMaven 'proxy_settings.xml'
-        }
-
-        // assert
-        assertThat "Expected NO URLs to run through our repo! ${requestedUrls}",
-                   requestedUrls.any(),
-                   is(equalTo(false))
-        assertThat "Expected ${proxyUrls} to have clean plugin!",
-                   proxyUrls.contains(
-                           'http://localhost:8081/repo/org/apache/maven/plugins/maven-clean-plugin/2.5/maven-clean-plugin-2.5.pom'),
-                   is(equalTo(true))
-        assertThat proxyHostHeaders.unique(),
-                   is(equalTo(['localhost:8081', 'repo.maven.apache.org']))
-    }
-
-    @Test
-    void proxyFetch_Bypass() {
-        // arrange
-        httpServer.requestHandler { HttpServerRequest request ->
-            def uri = request.absoluteURI()
-            request.response().with {
-                // we're more interested in the request than what Maven does with the response
-                statusCode = 404
-                end()
-            }
-        }.listen(8081, 'localhost')
-        List<String> proxyUrls = []
-        List<String> proxyHostHeaders = []
-        httpServer.requestHandler { HttpServerRequest request ->
-            def uri = request.absoluteURI()
-            proxyUrls << uri
-            proxyHostHeaders << request.getHeader('Host')
-            request.response().with {
-                statusCode = 404
-                end()
-            }
-        }.listen(8082, 'localhost')
-
-        // act
-        // we won't fail this time because we exclude Maven central from being proxied
-        // but we do still proxy our localhost repo
-        runMaven 'proxy_settings_bypass.xml'
-
-        // assert
-        assertThat proxyHostHeaders.unique(),
-                   is(equalTo(['localhost:8081']))
-    }
-
-    @Test
-    void deploy() {
-        // arrange
-        List<String> postedUrls = []
-        byte[] jarBytes = null
-        byte[] pomBytes = null
-        httpServer.requestHandler { HttpServerRequest request ->
-            def uri = request.absoluteURI()
-            request.response().with {
-                if (request.method().name() == 'GET' && uri.contains('maven-metadata.xml')) {
-                    statusCode = 404
-                    end()
-                    return
-                }
-                println "Got POST ${uri}..."
-                postedUrls << uri
-                request.bodyHandler { Buffer buffer ->
-                    if (uri.endsWith('pom')) {
-                        pomBytes = buffer.bytes
-                    } else if (uri.endsWith('.jar')) {
-                        jarBytes = buffer.bytes
-                    }
-                }
-                statusCode = 201
-                end()
-            }
-        }.listen(8081, 'localhost')
-
-        // act
-        runMaven 'simple_settings.xml',
-                 'simple_upload_artifact.xml',
-                 'clean',
-                 'deploy'
-
-        // assert
-        assert jarBytes
-        assert pomBytes
-        def pomText = new String(pomBytes)
-        assertThat pomText,
-                   is(containsString('<artifactId>test.artifact</artifactId>'))
-        scratchPad.mkdirs()
-        def jarFile = new File(scratchPad, 'something.jar')
-        jarFile.bytes = jarBytes
-        def zipFile = new ZipFile(jarFile)
-        def size = 0
-        zipFile.entries().each { entry ->
-            size++
-            println "entry ${entry.name}"
-        }
-        assertThat size,
-                   is(equalTo(7))
-    }
-
-    @Test
-    @Ignore('write these')
-    void deploy_too_many_429() {
-        // arrange
-        // TODO: Can apache handle this itself??
-
-        // act
-
-        // assert
-        fail 'write this'
-    }
-
-    @Test
-    @Ignore('write these')
-    void deploy_redirect_on_post() {
-        // arrange
-        // TODO: Can apache handle this itself??
-
-        // act
-
-        // assert
-        fail 'write this'
-    }
-
-    @Test
-    @Ignore('write these')
-    void resourceExists() {
-        // arrange
-
-        // act
-
-        // assert
-        fail 'write this'
-    }
-
-    @Test
-    void simpleFetch_302() {
-        // arrange
-        List<String> requestedUrls = []
-        def firstSiteHit = false
-        def secondSiteHit = false
-        httpServer.requestHandler { HttpServerRequest request ->
-            firstSiteHit = true
-            def path = request.uri()
-            def newUri = "http://localhost:8081${path}"
-            println "redirecting to ${newUri}"
-            request.response().with {
-                // Maven wagon will never see this, apache httpclient follows the redirect
-                statusCode = 302
-                putHeader('Location', newUri)
-                end()
-            }
-        }.listen(8082, 'localhost')
-        httpServer.requestHandler { HttpServerRequest request ->
-            def uri = request.absoluteURI()
-            println "Fake server got URL ${uri}"
-            println "Headers:"
-            request.headers().each { kvp ->
-                println "Key ${kvp.key} value ${kvp.value}"
-            }
-            println "End headers"
-            requestedUrls << uri
-            request.response().with {
-                if (uri.contains('maven-metadata.xml')) {
-                    statusCode = 200
-                    if (uri.endsWith('sha1')) {
-                        end('dbd5c806a03197aff7179d49f2b7db586887e8a7')
-                        return
-                    }
-                    println 'Returning first pass of metadata'
-                    def file = new File(testResources, 'simple_pom_artifact_metadata.xml')
-                    assert file.exists()
-                    end(file.text)
-                    return
-                }
-                if (uri.contains('test.artifact')) {
-                    if (uri.endsWith('sha1')) {
-                        statusCode = 200
-                        end('1c60353fb663ddec3c69fe6436146a5172ad1b0f')
-                        return
-                    }
-                    secondSiteHit = true
-                    println "returning first pass of POM"
-                    statusCode = 200
-                    putHeader('Content-Type', 'application/xml')
-                    def responseText = new File(testResources, 'simple_pom_artifact.xml')
-                    assert responseText.exists()
-                    end(responseText.text)
-                    return
-                }
-                // we're more interested in the request than what Maven does with the response
-                statusCode = 404
-                end()
-            }
-        }.listen(8081, 'localhost')
-
-        // act
-        // should not cause issues when we run again
-        runMaven 'simple_settings.xml',
-                 'pom_redirect.xml',
-                 'clean',
-                 'compile'
-
-        // assert
-        assertThat firstSiteHit,
-                   is(equalTo(true))
-        assertThat secondSiteHit,
-                   is(equalTo(true))
-    }
-
-    @Test
     void samlFetch_FirstTime() {
         // arrange
         List<String> requestedUrls = []
@@ -648,11 +319,6 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
             def uri = request.absoluteURI()
             def isArtifact2 = uri.contains('test.artifact2')
             println "Fake server got URL ${uri}"
-            println "Headers:"
-            request.headers().each { kvp ->
-                println " Key ${kvp.key} value ${kvp.value}"
-            }
-            println "End headers"
             requestedUrls << uri
             request.response().with {
                 switch (uri) {
@@ -690,13 +356,18 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
                         end('dbd5c806a03197aff7179d49f2b7db586887e8a7')
                         return
                     }
-                    println 'Returning first pass of metadata'
+                    println 'Returning metadata'
                     def file = new File(testResources, 'simple_pom_artifact_metadata.xml')
                     assert file.exists()
                     end(file.text)
                     return
                 }
                 if (uri.contains('test.artifact')) {
+                    println "*Headers:"
+                    request.headers().each { kvp ->
+                        println "  Key ${kvp.key} value ${kvp.value}"
+                    }
+                    println "*End headers"
                     def expectedPassword = expireCounter >= 2 ? 'foobar' : 'abcdef'
                     if (expireCounter >= 2 && !request.getHeader('Authorization')) {
                         exception = new Exception('We stopped supplying auth altogether. Wagon scope issue?')
@@ -712,6 +383,7 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
                         end()
                         return
                     }
+                    println "Authentication passed! Increasing expire counter to ${expireCounter + 1} from ${expireCounter}..."
                     expireCounter++
                     if (uri.endsWith('sha1')) {
                         statusCode = 200
@@ -741,15 +413,5 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
 
         // assert
         assert !exception
-    }
-
-    @Test
-    void creds_in_server_xml() {
-        // arrange
-
-        // act
-
-        // assert
-        fail 'write this'
     }
 }
