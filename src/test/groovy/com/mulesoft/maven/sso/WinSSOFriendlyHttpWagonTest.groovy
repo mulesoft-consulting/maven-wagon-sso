@@ -635,7 +635,7 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
                  'compile'
 
         // assert
-        fail 'write this'
+        // should have no errors
     }
 
     @Test
