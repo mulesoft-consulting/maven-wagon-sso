@@ -220,6 +220,7 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
     void samlFetch_FirstTime() {
         // arrange
         List<String> requestedUrls = []
+        def alreadyFetched = false
         httpServer.requestHandler { HttpServerRequest request ->
             def uri = request.absoluteURI()
             println "Fake server got URL ${uri}"
@@ -232,6 +233,12 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
             request.response().with {
                 switch (uri) {
                     case 'http://a_place_that_posts_saml_token/':
+                        if (alreadyFetched) {
+                            statusCode = 500
+                            end('already fetched a token!')
+                            return
+                        }
+                        alreadyFetched = true
                         statusCode = 200
                         putHeader('Content-Type', 'text/html')
                         def file = getFile(testResources, 'auto_post.html')
