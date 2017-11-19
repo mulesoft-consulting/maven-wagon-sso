@@ -132,14 +132,23 @@ class AnypointTokenCredentialsProviderTest {
     }
 
     @Test
-    @Ignore
     void getCredentials_Us_Already_Fetched() {
         // arrange
+        def provider = getProvider()
+        def authScope = new AuthScope('our.repo.url',
+                                      8080,
+                                      'realm',
+                                      'Basic')
+        def credentials = new UsernamePasswordCredentials('user', 'pass')
+        provider.setCredentials(authScope,
+                                credentials)
 
         // act
+        def result = provider.getCredentials(authScope)
 
         // assert
-        fail 'write this'
+        assertThat result,
+                   is(equalTo(credentials))
     }
 
     @Test
