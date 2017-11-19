@@ -13,7 +13,7 @@ import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.is
 import static org.junit.Assert.assertThat
 
-class AccessTokenFetcherTest implements FileHelper {
+class AccessTokenFetcherImplTest implements FileHelper {
     List<HttpServer> startedServers
 
     @Before
@@ -41,9 +41,9 @@ class AccessTokenFetcherTest implements FileHelper {
         def proxyInfo = new ProxyInfo()
         proxyInfo.host = 'localhost'
         proxyInfo.port = 8081
-        def fetcher = new AccessTokenFetcher(proxyInfo,
-                                             'http://anypoint.test.com/profile_location/',
-                                             'http://a_place_that_posts_saml_token')
+        def fetcher = new AccessTokenFetcherImpl(proxyInfo,
+                                                 'http://anypoint.test.com/profile_location/',
+                                                 'http://a_place_that_posts_saml_token')
         httpServer.requestHandler { HttpServerRequest request ->
             def uri = request.absoluteURI()
             println "fake proxy got ${uri}"

@@ -224,9 +224,9 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
             log.info 'Enabling Anypoint access token fetcher for repository {}',
                      this.repository
             def profileUrl = this.anypointProfileUrl ?: 'https://anypoint.mulesoft.com/accounts/api/profile'
-            def accessTokenFetcher = new AccessTokenFetcher(proxyInfo,
-                                                            profileUrl,
-                                                            samlIdpUrl)
+            def accessTokenFetcher = new AccessTokenFetcherImpl(proxyInfo,
+                                                                profileUrl,
+                                                                samlIdpUrl)
             httpClientContext.credentialsProvider = new AnypointTokenCredentialsProvider(
                     httpClientContext.credentialsProvider,
                     accessTokenFetcher)

@@ -5,7 +5,6 @@ import org.apache.http.auth.Credentials
 import org.apache.http.auth.UsernamePasswordCredentials
 import org.apache.http.client.CredentialsProvider
 import org.apache.maven.wagon.repository.Repository
-import org.junit.Ignore
 import org.junit.Test
 
 import static org.hamcrest.Matchers.*
@@ -121,14 +120,51 @@ class AnypointTokenCredentialsProviderTest {
     }
 
     @Test
-    @Ignore
-    void getCredentials_Us_Not_Yet_Fetched() {
+    void getCredentials_notOurPort_AlreadyStored() {
         // arrange
+        def provider = getProvider()
+        def authScope = new AuthScope('our.repo.url',
+                                      8081,
+                                      'realm',
+                                      'Basic')
+        def creds = new UsernamePasswordCredentials('user', 'pass')
+        provider.setCredentials(authScope, creds)
 
         // act
+        def result = provider.getCredentials(authScope)
 
         // assert
-        fail 'write this'
+        assertThat result,
+                   is(equalTo(creds))
+    }
+
+    @Test
+    void getCredentials_Us_Not_Yet_Fetched() {
+        // arrange
+        def fetched = false
+        def tokenFetcher = [
+                getAccessToken: {
+                    assert !fetched: 'Already fetched!'
+                    fetched = true
+                    'abc'
+                }
+        ] as AccessTokenFetcher
+        def provider = getProvider(null,
+                                   tokenFetcher)
+        def authScope = new AuthScope('our.repo.url',
+                                      8080,
+                                      'realm',
+                                      'Basic')
+
+        // act
+        def result = provider.getCredentials(authScope)
+
+        // assert
+        def expectedCreds = new UsernamePasswordCredentials('~~~Token~~~',
+                                                            'abc')
+        assertThat result,
+                   is(equalTo(expectedCreds))
+        provider.getCredentials(authScope)
     }
 
     @Test
@@ -156,7 +192,7 @@ class AnypointTokenCredentialsProviderTest {
         // arrange
         def provider = getProvider()
         def authScope = new AuthScope('our.repo.url',
-                                      8080,
+                                      8081,
                                       'realm',
                                       'Basic')
         def credentials = new UsernamePasswordCredentials('user', 'pass')
@@ -176,13 +212,16 @@ class AnypointTokenCredentialsProviderTest {
         // arrange
         def existingCleared = false
         def existing = [
+                getCredentials: { AuthScope scope ->
+                    null
+                },
                 clear: {
                     existingCleared = true
                 }
         ] as CredentialsProvider
         def provider = getProvider(existing)
         def authScope = new AuthScope('our.repo.url',
-                                      8080,
+                                      8081,
                                       'realm',
                                       'Basic')
         def credentials = new UsernamePasswordCredentials('user', 'pass')
