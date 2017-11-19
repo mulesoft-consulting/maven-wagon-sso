@@ -40,3 +40,11 @@ To configure an Anypoint maven server, put something like this in settings.xml:
     </servers>
 </settings>
 ```
+
+# Design
+
+1. Used Groovy to code parts of this since it's SOOO much less verbose
+
+# TODOs
+
+1. The build will bundle lots of JAR dependencies into the finished product, which is quite large (20MB). There are probably classes in the JAR that aren't used. If someone had the time and the shadow/jar plugins for Gradle can aid in this, might be nice to only bundled classes that are used (and not already present with Maven)
