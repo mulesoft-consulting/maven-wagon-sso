@@ -229,7 +229,8 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
                                                                 samlIdpUrl)
             httpClientContext.credentialsProvider = new AnypointTokenCredentialsProvider(
                     httpClientContext.credentialsProvider,
-                    accessTokenFetcher)
+                    accessTokenFetcher,
+                    this.repository)
         }
         httpClient = builder.build()
     }
