@@ -1,4 +1,4 @@
-package org.apache.maven.wagon.providers.http;
+package com.mulesoft.maven;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -18,6 +18,9 @@ package org.apache.maven.wagon.providers.http;
  * specific language governing permissions and limitations
  * under the License.
  */
+
+// Changes from Apache original version:
+// - package name
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;

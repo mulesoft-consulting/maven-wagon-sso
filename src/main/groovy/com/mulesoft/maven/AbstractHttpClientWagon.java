@@ -1,4 +1,4 @@
-package org.apache.maven.wagon.providers.http;
+package com.mulesoft.maven;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -19,6 +19,13 @@ package org.apache.maven.wagon.providers.http;
  * under the License.
  */
 
+// Changes from Apache original version:
+// - Credential provider
+// - WinHttpClients in createClient
+// - package name
+
+import com.mulesoft.maven.sso.AccessTokenFetcherImpl;
+import com.mulesoft.maven.sso.AnypointTokenCredentialsProvider;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
@@ -51,10 +58,7 @@ import org.apache.http.conn.ssl.SSLContextBuilder;
 import org.apache.http.conn.ssl.SSLInitializationException;
 import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.impl.auth.BasicScheme;
-import org.apache.http.impl.client.BasicAuthCache;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.*;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.protocol.HTTP;
@@ -68,6 +72,7 @@ import org.apache.maven.wagon.TransferFailedException;
 import org.apache.maven.wagon.Wagon;
 import org.apache.maven.wagon.authorization.AuthorizationException;
 import org.apache.maven.wagon.events.TransferEvent;
+import org.apache.maven.wagon.providers.http.*;
 import org.apache.maven.wagon.proxy.ProxyInfo;
 import org.apache.maven.wagon.repository.Repository;
 import org.apache.maven.wagon.resource.Resource;
@@ -372,7 +377,7 @@ public abstract class AbstractHttpClientWagon
 
     private static CloseableHttpClient createClient()
     {
-        return HttpClientBuilder.create() //
+        return WinHttpClients.custom()
                 .useSystemProperties() //
                 .disableConnectionState() //
                 .setConnectionManager( httpClientConnectionManager ) //
@@ -408,11 +413,27 @@ public abstract class AbstractHttpClientWagon
      */
     private BasicAuthScope proxyAuth;
 
+    private String samlIdpUrl;
+
+    private String anypointProfileUrl;
+
     public void openConnectionInternal()
     {
         repository.setUrl( getURL( repository ) );
 
         credentialsProvider = new BasicCredentialsProvider();
+
+        ProxyInfo proxyInfo = getProxyInfo( getRepository().getProtocol(), getRepository().getHost() );
+
+        if (samlIdpUrl != null) {
+            AccessTokenFetcherImpl tokenFetcher = new AccessTokenFetcherImpl(proxyInfo,
+                                                                             this.anypointProfileUrl,
+                                                                             this.samlIdpUrl);
+            credentialsProvider = new AnypointTokenCredentialsProvider(credentialsProvider,
+                                                                       tokenFetcher,
+                                                                       getRepository());
+        }
+
         authCache = new BasicAuthCache();
 
         if ( authenticationInfo != null )
@@ -432,7 +453,6 @@ public abstract class AbstractHttpClientWagon
             }
         }
 
-        ProxyInfo proxyInfo = getProxyInfo( getRepository().getProtocol(), getRepository().getHost() );
         if ( proxyInfo != null )
         {
             String proxyUsername = proxyInfo.getUserName();
@@ -779,7 +799,7 @@ public abstract class AbstractHttpClientWagon
 
         if ( config != null )
         {
-            ConfigurationUtils.copyConfig( config, requestConfigBuilder );
+            ConfigurationUtils.copyConfig(config, requestConfigBuilder );
         }
         else
         {
