@@ -430,6 +430,9 @@ public abstract class AbstractHttpClientWagon
         }
 
         if (this.samlIdpUrl != null) {
+            if (anypointProfileUrl == null) {
+                anypointProfileUrl = "https://anypoint.mulesoft.com/accounts/api/profile";
+            }
             AccessTokenFetcherImpl tokenFetcher = new AccessTokenFetcherImpl(proxyInfo,
                                                                              this.anypointProfileUrl,
                                                                              this.samlIdpUrl);
