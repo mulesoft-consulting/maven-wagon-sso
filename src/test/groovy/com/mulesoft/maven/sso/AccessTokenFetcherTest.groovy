@@ -42,7 +42,8 @@ class AccessTokenFetcherTest implements FileHelper {
         proxyInfo.host = 'localhost'
         proxyInfo.port = 8081
         def fetcher = new AccessTokenFetcher(proxyInfo,
-                                             'http://anypoint.test.com/profile_location/')
+                                             'http://anypoint.test.com/profile_location/',
+                                             'http://a_place_that_posts_saml_token')
         httpServer.requestHandler { HttpServerRequest request ->
             def uri = request.absoluteURI()
             println "fake proxy got ${uri}"
@@ -85,7 +86,7 @@ class AccessTokenFetcherTest implements FileHelper {
         }.listen(8081, 'localhost')
 
         // act
-        def result = fetcher.getAccessToken('http://a_place_that_posts_saml_token')
+        def result = fetcher.getAccessToken()
 
         // assert
         assertThat result,

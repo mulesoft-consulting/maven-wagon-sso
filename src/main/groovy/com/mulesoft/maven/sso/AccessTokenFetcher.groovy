@@ -7,15 +7,18 @@ import org.apache.maven.wagon.proxy.ProxyInfo
 class AccessTokenFetcher {
     private final WebClient client
     private final String anypointProfileUrl
+    private final String samlIdpUrl
 
     AccessTokenFetcher(ProxyInfo proxyInfo,
-                       String anypointProfileUrl) {
+                       String anypointProfileUrl,
+                       String samlIdpUrl) {
+        this.samlIdpUrl = samlIdpUrl
         this.anypointProfileUrl = anypointProfileUrl
         client = new WebClient()
         client.webConnection = new HtmlUnitCustomizedWebConnection(this.client, proxyInfo)
     }
 
-    String getAccessToken(String samlIdpUrl) {
+    String getAccessToken() {
         println "Triggering initial SAML flow with ${anypointProfileUrl}"
         client.getPage(samlIdpUrl)
         println "SAML Flow complete, now fetching access token from ${anypointProfileUrl}"

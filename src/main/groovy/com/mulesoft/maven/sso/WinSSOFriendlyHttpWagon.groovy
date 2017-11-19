@@ -5,6 +5,7 @@ import org.apache.http.HttpHost
 import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.client.methods.HttpPost
+import org.apache.http.client.protocol.HttpClientContext
 import org.apache.http.client.utils.DateUtils
 import org.apache.http.client.utils.URIBuilder
 import org.apache.http.entity.InputStreamEntity
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit
 class WinSSOFriendlyHttpWagon extends StreamWagon {
     // this class is instantiated for each repository
     private CloseableHttpClient httpClient
+    private HttpClientContext httpClientContext
     private boolean closed
     String samlIdpUrl
     String anypointProfileUrl
@@ -64,7 +66,7 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
             get.addHeader(hdr)
         }
         try {
-            def response = httpClient.execute(get)
+            def response = httpClient.execute(get, httpClientContext)
             def validateResult = validateResponse(url,
                                                   resource,
                                                   response,
@@ -174,7 +176,7 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
         post.entity = new InputStreamEntity(source.newInputStream())
         CloseableHttpResponse response = null
         try {
-            response = httpClient.execute(post)
+            response = httpClient.execute(post, httpClientContext)
             validateResponse(url,
                              resource,
                              response,
@@ -215,13 +217,16 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
             // a single repository
             builder.routePlanner = new DefaultProxyRoutePlanner(new HttpHost(proxyInfo.host, proxyInfo.port))
         }
-        // 'https://anypoint.mulesoft.com/accounts/api/profile'
-        // this will get set by doing this, can control which repos we try and do SAML idp stuff for
-//        <configuration>
-//        <samlIdpUrl>true</samlIdpUrl>
-//        </configuration>
-        // TODO: Also need to add an interceptor to get the SAML token, etc. when appropriate
-        // TODO: Need to figure out how to set basic auth credentials for every request w/ httpclient
+        httpClientContext = HttpClientContext.create()
+        if (samlIdpUrl) {
+            def profileUrl = this.anypointProfileUrl ?: 'https://anypoint.mulesoft.com/accounts/api/profile'
+            def accessTokenFetcher = new AccessTokenFetcher(proxyInfo,
+                                                            profileUrl,
+                                                            samlIdpUrl)
+            httpClientContext.credentialsProvider = new AnypointTokenCredentialsProvider(
+                    httpClientContext.credentialsProvider,
+                    accessTokenFetcher)
+        }
         httpClient = builder.build()
     }
 
