@@ -11,7 +11,8 @@
 # Process
 
 1. Wagon behaves as traditional Maven would until a server is encountered with the `samlIdpUrl` config setting.
-1. At that point, the first time it's challenged for authentication by the server (which is usually when fetching the remote artifact's POM, `maven-metadata.xml` is not restricted), it will get an access token by mimicing a user's browser flow and then authenticate as described at [the Exchange publishd doc](https://docs.mulesoft.com/anypoint-exchange/to-publish-assets-maven#to-publish-federated-assets)
+1. At that point, the first time it's challenged for authentication by the server (which is usually when fetching the remote artifact's POM, `maven-metadata.xml` is not restricted), it will get an access token by mimicking a user's browser flow and then authenticate as described at [the Exchange publishd doc](https://docs.mulesoft.com/anypoint-exchange/to-publish-assets-maven#to-publish-federated-assets)
+1. Tokens are not persisted. They are held on to in memory for as long as needed by the Maven run. Subsequent runs will fetch new tokens.
 
 # Using
 
