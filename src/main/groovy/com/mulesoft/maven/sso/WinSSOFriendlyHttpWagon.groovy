@@ -1,6 +1,7 @@
 package com.mulesoft.maven.sso
 
 import org.apache.http.HttpException
+import org.apache.http.HttpHost
 import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.client.methods.HttpPost
@@ -9,6 +10,7 @@ import org.apache.http.client.utils.URIBuilder
 import org.apache.http.entity.InputStreamEntity
 import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.impl.client.WinHttpClients
+import org.apache.http.impl.conn.DefaultProxyRoutePlanner
 import org.apache.http.message.BasicHeader
 import org.apache.maven.wagon.*
 import org.apache.maven.wagon.authentication.AuthenticationException
@@ -91,7 +93,7 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
     private boolean validateResponse(String url,
                                      Resource resource,
                                      CloseableHttpResponse response,
-                                     Map<Integer,Integer> expectedSuccessCodes,
+                                     Map<Integer, Integer> expectedSuccessCodes,
                                      Closure waitRetry) {
         def statusCode = response.getStatusLine().getStatusCode()
         def reasonPhrase = ", ReasonPhrase:" + response.getStatusLine().getReasonPhrase() + "."
@@ -208,7 +210,9 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
         builder.userAgent = 'AHC'
         def proxyInfo = getProxyInfo(repository.protocol, repository.host)
         if (proxyInfo) {
-            builder.routePlanner = new WagonProxyRoutePlanner(proxyInfo)
+            // Maven takes care of deciding whether we need a proxy or not since this builder is just for
+            // a single repository
+            builder.routePlanner = new DefaultProxyRoutePlanner(new HttpHost(proxyInfo.host, proxyInfo.port))
         }
         // this will get set by doing this, can control which repos we try and do SAML idp stuff for
 //        <configuration>
