@@ -20,7 +20,7 @@ package com.mulesoft.maven;
  */
 
 // Changes from Apache original version:
-// - Credential provider
+// - Credential provider + authCache are static now
 // - WinHttpClients in createClient
 // - package name
 // - Removed clearing of credentials provider from close
@@ -388,7 +388,7 @@ public abstract class AbstractHttpClientWagon
     // static because want to share credentials across different artifacts running
     private static CredentialsProvider credentialsProvider;
 
-    private AuthCache authCache;
+    private static AuthCache authCache;
 
     private Closeable closeable;
 
@@ -437,7 +437,9 @@ public abstract class AbstractHttpClientWagon
                                                                                            tokenFetcher);
         }
 
-        authCache = new BasicAuthCache();
+        if (authCache == null) {
+            authCache = new BasicAuthCache();
+        }
 
         if ( authenticationInfo != null )
         {
@@ -491,12 +493,6 @@ public abstract class AbstractHttpClientWagon
         if ( !persistentPool )
         {
             httpClientConnectionManager.closeIdleConnections( 0, TimeUnit.MILLISECONDS );
-        }
-
-        if ( authCache != null )
-        {
-            authCache.clear();
-            authCache = null;
         }
     }
 
