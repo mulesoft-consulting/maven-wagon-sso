@@ -5,6 +5,7 @@ import org.apache.http.auth.Credentials
 import org.apache.http.auth.UsernamePasswordCredentials
 import org.apache.http.client.CredentialsProvider
 import org.apache.maven.wagon.repository.Repository
+import org.junit.Ignore
 import org.junit.Test
 
 import static org.hamcrest.Matchers.*
@@ -49,84 +50,10 @@ class AnypointTokenCredentialsProviderTest {
     }
 
     @Test
-    void setCredentials_existingProviderAvailable_notOurHostName() {
+    void setCredentials_basicScheme() {
         // arrange
-        AuthScope existingSetAuth = null
-        Credentials existingSetCreds = null
-        def existing = [
-                setCredentials: { AuthScope scope, Credentials creds ->
-                    existingSetAuth = scope
-                    existingSetCreds = creds
-
-                }
-        ] as CredentialsProvider
-        def provider = getProvider(existing)
+        def provider = getProvider()
         def authScope = new AuthScope('other.repo.url',
-                                      8080,
-                                      'realm',
-                                      'Basic')
-        def creds = new UsernamePasswordCredentials('user', 'pass')
-
-        // act
-        provider.setCredentials(authScope, creds)
-
-        // assert
-        assertThat existingSetAuth,
-                   is(equalTo(authScope))
-        assertThat existingSetCreds,
-                   is(equalTo(creds))
-    }
-
-    @Test
-    void setCredentials_existingProviderAvailable_notOurPort() {
-        // arrange
-        AuthScope existingSetAuth = null
-        Credentials existingSetCreds = null
-        def existing = [
-                setCredentials: { AuthScope scope, Credentials creds ->
-                    existingSetAuth = scope
-                    existingSetCreds = creds
-
-                }
-        ] as CredentialsProvider
-        def provider = getProvider(existing)
-        def authScope = new AuthScope('our.repo.url',
-                                      8081,
-                                      'realm',
-                                      'Basic')
-        def creds = new UsernamePasswordCredentials('user', 'pass')
-
-        // act
-        provider.setCredentials(authScope, creds)
-
-        // assert
-        assertThat existingSetAuth,
-                   is(equalTo(authScope))
-        assertThat existingSetCreds,
-                   is(equalTo(creds))
-    }
-
-    @Test
-    void setCredentials_noExistingProviderAvailable_notUs() {
-        def provider = getProvider()
-        def authScope = new AuthScope('our.repo.url',
-                                      8081,
-                                      'realm',
-                                      'Basic')
-        def creds = new UsernamePasswordCredentials('user', 'pass')
-
-        // act
-        provider.setCredentials(authScope, creds)
-
-        // assert
-        // should not crash
-    }
-
-    @Test
-    void setCredentials_Us() {
-        // arrange
-        def provider = getProvider()
-        def authScope = new AuthScope('our.repo.url',
                                       8080,
                                       'realm',
                                       'Basic')
@@ -162,14 +89,9 @@ class AnypointTokenCredentialsProviderTest {
     }
 
     @Test
-    void getCredentials_existingProviderAvailable_notOurHostName() {
+    void getCredentials_noAccessToken_notOurHostName() {
         // arrange
-        def existing = [
-                getCredentials: { AuthScope scope ->
-                    new UsernamePasswordCredentials('user', 'pass')
-                }
-        ] as CredentialsProvider
-        def provider = getProvider(existing)
+        def provider = getProvider()
         def authScope = new AuthScope('other.repo.url',
                                       8080,
                                       'realm',
@@ -179,32 +101,11 @@ class AnypointTokenCredentialsProviderTest {
 
         // assert
         assertThat result,
-                   is(equalTo(new UsernamePasswordCredentials('user', 'pass')))
+                   is(nullValue())
     }
 
     @Test
-    void getCredentials_existingProviderAvailable_notOurPort() {
-        // arrange
-        def existing = [
-                getCredentials: { AuthScope scope ->
-                    new UsernamePasswordCredentials('user', 'pass')
-                }
-        ] as CredentialsProvider
-        def provider = getProvider(existing)
-        def authScope = new AuthScope('our.repo.url',
-                                      8081,
-                                      'realm',
-                                      'Basic')
-        // act
-        def result = provider.getCredentials(authScope)
-
-        // assert
-        assertThat result,
-                   is(equalTo(new UsernamePasswordCredentials('user', 'pass')))
-    }
-
-    @Test
-    void getCredentials_noExistingProviderAvailable_notUs() {
+    void getCredentials_noAccessToken_notOurPort() {
         // arrange
         def provider = getProvider()
         def authScope = new AuthScope('our.repo.url',
@@ -220,7 +121,42 @@ class AnypointTokenCredentialsProviderTest {
     }
 
     @Test
+    @Ignore
     void getCredentials_Us_Not_Yet_Fetched() {
+        // arrange
+
+        // act
+
+        // assert
+        fail 'write this'
+    }
+
+    @Test
+    @Ignore
+    void getCredentials_Us_Already_Fetched() {
+        // arrange
+
+        // act
+
+        // assert
+        fail 'write this'
+    }
+
+    @Test
+    @Ignore
+    void clear_noExisting() {
+        // arrange
+        def provider = getProvider()
+
+        // act
+
+        // assert
+        fail 'write this'
+    }
+
+    @Test
+    @Ignore
+    void clear_existing() {
         // arrange
 
         // act
