@@ -159,10 +159,10 @@ class AnypointTokenCredentialsProviderTest {
         def result = provider.getCredentials(authScope)
 
         // assert
-        def expectedCreds = new UsernamePasswordCredentials('~~~Token~~~',
-                                                            'abc')
-        assertThat result,
-                   is(equalTo(expectedCreds))
+        assertThat result.userPrincipal.name,
+                   is(equalTo('~~~Token~~~'))
+        assertThat result.password,
+                   is(equalTo('abc'))
         provider.getCredentials(authScope)
     }
 

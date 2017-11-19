@@ -3,7 +3,6 @@ package com.mulesoft.maven.sso
 import groovy.util.logging.Slf4j
 import org.apache.http.auth.AuthScope
 import org.apache.http.auth.Credentials
-import org.apache.http.auth.UsernamePasswordCredentials
 import org.apache.http.client.CredentialsProvider
 import org.apache.http.client.config.AuthSchemes
 import org.apache.http.impl.client.BasicCredentialsProvider
@@ -13,8 +12,6 @@ import org.apache.maven.wagon.repository.Repository
 class AnypointTokenCredentialsProvider extends BasicCredentialsProvider {
     private final CredentialsProvider existingProvider
     private final static String BASIC_AUTH = AuthSchemes.BASIC.toUpperCase()
-    // https://docs.mulesoft.com/anypoint-exchange/to-publish-assets-maven#to-publish-federated-assets
-    private final static String ANYPOINT_TOKEN_VIA_BASIC = '~~~Token~~~'
     private final Map<String, AccessTokenFetcher> fetchers = [:]
 
     AnypointTokenCredentialsProvider(CredentialsProvider existingProvider = new BasicCredentialsProvider()) {
@@ -60,8 +57,7 @@ class AnypointTokenCredentialsProvider extends BasicCredentialsProvider {
             if (accessTokenFetcher) {
                 log.info 'Existing credentials not available for {}, fetching',
                          key
-                def credentials = new UsernamePasswordCredentials(ANYPOINT_TOKEN_VIA_BASIC,
-                                                                  accessTokenFetcher.accessToken)
+                def credentials = new AccessTokenCredentials(accessTokenFetcher.accessToken, new Date())
                 this.setCredentials(authScope, credentials)
                 return credentials
             }
