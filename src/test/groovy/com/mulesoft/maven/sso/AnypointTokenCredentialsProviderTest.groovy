@@ -10,13 +10,10 @@ import org.junit.Test
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
+@SuppressWarnings("GroovyAssignabilityCheck")
 class AnypointTokenCredentialsProviderTest {
-    private AnypointTokenCredentialsProvider getProvider(CredentialsProvider existing = null,
-                                                         AccessTokenFetcher tokenFetcher = null) {
-        def repo = new Repository('the-repo', 'http://our.repo.url:8080')
-        new AnypointTokenCredentialsProvider(existing,
-                                             tokenFetcher,
-                                             repo)
+    private AnypointTokenCredentialsProvider getProvider(CredentialsProvider existing = null) {
+        new AnypointTokenCredentialsProvider(existing)
     }
 
     @Test
@@ -149,8 +146,10 @@ class AnypointTokenCredentialsProviderTest {
                     'abc'
                 }
         ] as AccessTokenFetcher
-        def provider = getProvider(null,
-                                   tokenFetcher)
+        def provider = getProvider(null)
+        provider.addAccessTokenFetcher(new Repository('the_id',
+                                                      'http://our.repo.url:8080'),
+                                       tokenFetcher)
         def authScope = new AuthScope('our.repo.url',
                                       8080,
                                       'realm',
@@ -165,6 +164,34 @@ class AnypointTokenCredentialsProviderTest {
         assertThat result,
                    is(equalTo(expectedCreds))
         provider.getCredentials(authScope)
+    }
+
+    @Test
+    void getCredentials_Not_Configured() {
+        // arrange
+        def fetched = false
+        def tokenFetcher = [
+                getAccessToken: {
+                    assert !fetched: 'Already fetched!'
+                    fetched = true
+                    'abc'
+                }
+        ] as AccessTokenFetcher
+        def provider = getProvider(null)
+        provider.addAccessTokenFetcher(new Repository('the_id',
+                                                      'http://our.repo.url:8080'),
+                                       tokenFetcher)
+        def authScope = new AuthScope('our.repo.url',
+                                      8081,
+                                      'realm',
+                                      'Basic')
+
+        // act
+        def result = provider.getCredentials(authScope)
+
+        // assert
+        assertThat result,
+                   is(nullValue())
     }
 
     @Test
@@ -215,7 +242,7 @@ class AnypointTokenCredentialsProviderTest {
                 getCredentials: { AuthScope scope ->
                     null
                 },
-                clear: {
+                clear         : {
                     existingCleared = true
                 }
         ] as CredentialsProvider

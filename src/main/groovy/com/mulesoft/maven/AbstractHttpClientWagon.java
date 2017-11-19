@@ -23,6 +23,7 @@ package com.mulesoft.maven;
 // - Credential provider
 // - WinHttpClients in createClient
 // - package name
+// - Removed clearing of credentials provider from close
 
 import com.mulesoft.maven.sso.AccessTokenFetcherImpl;
 import com.mulesoft.maven.sso.AnypointTokenCredentialsProvider;
@@ -384,7 +385,8 @@ public abstract class AbstractHttpClientWagon
                 .build();
     }
 
-    private CredentialsProvider credentialsProvider;
+    // static because want to share credentials across different artifacts running
+    private static CredentialsProvider credentialsProvider;
 
     private AuthCache authCache;
 
@@ -421,17 +423,18 @@ public abstract class AbstractHttpClientWagon
     {
         repository.setUrl( getURL( repository ) );
 
-        credentialsProvider = new BasicCredentialsProvider();
-
         ProxyInfo proxyInfo = getProxyInfo( getRepository().getProtocol(), getRepository().getHost() );
 
-        if (samlIdpUrl != null) {
+        if (credentialsProvider == null) {
+            credentialsProvider = new AnypointTokenCredentialsProvider();
+        }
+
+        if (this.samlIdpUrl != null) {
             AccessTokenFetcherImpl tokenFetcher = new AccessTokenFetcherImpl(proxyInfo,
                                                                              this.anypointProfileUrl,
                                                                              this.samlIdpUrl);
-            credentialsProvider = new AnypointTokenCredentialsProvider(credentialsProvider,
-                                                                       tokenFetcher,
-                                                                       getRepository());
+            ((AnypointTokenCredentialsProvider) credentialsProvider).addAccessTokenFetcher(getRepository(),
+                                                                                           tokenFetcher);
         }
 
         authCache = new BasicAuthCache();
@@ -494,12 +497,6 @@ public abstract class AbstractHttpClientWagon
         {
             authCache.clear();
             authCache = null;
-        }
-
-        if ( credentialsProvider != null )
-        {
-            credentialsProvider.clear();
-            credentialsProvider = null;
         }
     }
 

@@ -12,29 +12,30 @@ import org.apache.maven.wagon.repository.Repository
 @Slf4j
 class AnypointTokenCredentialsProvider extends BasicCredentialsProvider {
     private final CredentialsProvider existingProvider
-    private final AccessTokenFetcher accessTokenFetcher
-    private final Repository anypointRepositoryInfo
     private final static String BASIC_AUTH = AuthSchemes.BASIC.toUpperCase()
     // https://docs.mulesoft.com/anypoint-exchange/to-publish-assets-maven#to-publish-federated-assets
     private final static String ANYPOINT_TOKEN_VIA_BASIC = '~~~Token~~~'
+    private final Map<String, AccessTokenFetcher> fetchers = [:]
 
-    AnypointTokenCredentialsProvider(CredentialsProvider existingProvider,
-                                     AccessTokenFetcher accessTokenFetcher,
-                                     Repository anypointRepositoryInfo) {
-        this.anypointRepositoryInfo = anypointRepositoryInfo
-        this.accessTokenFetcher = accessTokenFetcher
+    AnypointTokenCredentialsProvider(CredentialsProvider existingProvider = new BasicCredentialsProvider()) {
         this.existingProvider = existingProvider
-    }
-
-    private boolean isOurs(AuthScope authScope) {
-        def repoInfo = this.anypointRepositoryInfo
-        repoInfo.host == authScope.host &&
-                repoInfo.port == authScope.port
-
     }
 
     private static boolean isBasicAuth(AuthScope authScope) {
         authScope.scheme == BASIC_AUTH
+    }
+
+    private static String getKey(String host,
+                                 int port) {
+        "${host}:${port}"
+    }
+
+    void addAccessTokenFetcher(Repository repository,
+                               AccessTokenFetcher accessTokenFetcher) {
+        def key = getKey(repository.host,
+                         repository.port)
+        // can't use URL, don't know full URL for auth scopes
+        fetchers[key] = accessTokenFetcher
     }
 
     @Override
@@ -53,11 +54,14 @@ class AnypointTokenCredentialsProvider extends BasicCredentialsProvider {
             if (existingCreds) {
                 return existingCreds
             }
-            if (isOurs(authScope)) {
+            def key = getKey(authScope.host,
+                             authScope.port)
+            def accessTokenFetcher = fetchers[key]
+            if (accessTokenFetcher) {
                 log.info 'Existing credentials not available for {}, fetching',
-                         this.anypointRepositoryInfo
+                         key
                 def credentials = new UsernamePasswordCredentials(ANYPOINT_TOKEN_VIA_BASIC,
-                                                                  this.accessTokenFetcher.accessToken)
+                                                                  accessTokenFetcher.accessToken)
                 this.setCredentials(authScope, credentials)
                 return credentials
             }
