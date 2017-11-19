@@ -637,4 +637,14 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
         // assert
         fail 'write this'
     }
+
+    @Test
+    void creds_in_server_xml() {
+        // arrange
+
+        // act
+
+        // assert
+        fail 'write this'
+    }
 }
