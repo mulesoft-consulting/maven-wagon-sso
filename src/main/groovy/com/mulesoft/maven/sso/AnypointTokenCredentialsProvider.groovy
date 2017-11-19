@@ -50,10 +50,12 @@ class AnypointTokenCredentialsProvider extends BasicCredentialsProvider {
         }
         //new UsernamePasswordCredentials('~~~Token~~~', 'abcdef')
     }
-
-    // TODO: clear our own and delegate to existingProvider if it exists
+    
     @Override
     void clear() {
-
+        super.clear()
+        if (existingProvider) {
+            existingProvider.clear()
+        }
     }
 }

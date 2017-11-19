@@ -152,25 +152,50 @@ class AnypointTokenCredentialsProviderTest {
     }
 
     @Test
-    @Ignore
     void clear_noExisting() {
         // arrange
         def provider = getProvider()
+        def authScope = new AuthScope('our.repo.url',
+                                      8080,
+                                      'realm',
+                                      'Basic')
+        def credentials = new UsernamePasswordCredentials('user', 'pass')
+        provider.setCredentials(authScope,
+                                credentials)
 
         // act
+        provider.clear()
 
         // assert
-        fail 'write this'
+        assertThat provider.getCredentials(authScope),
+                   is(nullValue())
     }
 
     @Test
-    @Ignore
-    void clear_existing() {
+    void clear_existing_and_super() {
         // arrange
+        def existingCleared = false
+        def existing = [
+                clear: {
+                    existingCleared = true
+                }
+        ] as CredentialsProvider
+        def provider = getProvider(existing)
+        def authScope = new AuthScope('our.repo.url',
+                                      8080,
+                                      'realm',
+                                      'Basic')
+        def credentials = new UsernamePasswordCredentials('user', 'pass')
+        provider.setCredentials(authScope,
+                                credentials)
 
         // act
+        provider.clear()
 
         // assert
-        fail 'write this'
+        assertThat provider.getCredentials(authScope),
+                   is(nullValue())
+        assertThat existingCleared,
+                   is(equalTo(true))
     }
 }
