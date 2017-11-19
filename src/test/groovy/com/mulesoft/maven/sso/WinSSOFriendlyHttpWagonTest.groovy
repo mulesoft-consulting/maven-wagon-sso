@@ -409,7 +409,8 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
         runMaven 'saml_settings.xml',
                  'pom_2madeupdependencies.xml',
                  'clean',
-                 'compile'
+                 'compile',
+                '-Danypoint.token.timeout.ms=5'
 
         // assert
         assert !exception

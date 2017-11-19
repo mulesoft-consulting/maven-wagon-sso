@@ -2,21 +2,20 @@ package com.mulesoft.maven.sso;
 
 import org.apache.http.auth.UsernamePasswordCredentials;
 
-import java.util.Date;
-
 public class AccessTokenCredentials extends UsernamePasswordCredentials {
     // https://docs.mulesoft.com/anypoint-exchange/to-publish-assets-maven#to-publish-federated-assets
     private final static String ANYPOINT_TOKEN_VIA_BASIC = "~~~Token~~~";
-    private final Date tokenTime;
+    private final long timeInMillis;
 
     public AccessTokenCredentials(String accessToken,
-                                  Date tokenTime) {
+                                  long timeInMillis) {
         super(ANYPOINT_TOKEN_VIA_BASIC, accessToken);
-        this.tokenTime = tokenTime;
+        this.timeInMillis = timeInMillis;
     }
 
-    public Date getTokenTime() {
-        return tokenTime;
+    public boolean isExpired(long maxAgeInMs) {
+        long difference = System.currentTimeMillis() - this.timeInMillis;
+        return difference > maxAgeInMs;
     }
 
     @Override
@@ -27,13 +26,13 @@ public class AccessTokenCredentials extends UsernamePasswordCredentials {
 
         AccessTokenCredentials that = (AccessTokenCredentials) o;
 
-        return tokenTime != null ? tokenTime.equals(that.tokenTime) : that.tokenTime == null;
+        return timeInMillis == that.timeInMillis;
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + (tokenTime != null ? tokenTime.hashCode() : 0);
+        result = 31 * result + (int) (timeInMillis ^ (timeInMillis >>> 32));
         return result;
     }
 }

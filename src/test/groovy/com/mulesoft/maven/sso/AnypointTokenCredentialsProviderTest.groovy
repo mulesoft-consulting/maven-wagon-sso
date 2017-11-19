@@ -215,6 +215,35 @@ class AnypointTokenCredentialsProviderTest {
     }
 
     @Test
+    void getCredentials_Expired() {
+        // arrange
+        def tokenFetcher = [
+                getAccessToken: {
+                    'def'
+                }
+        ] as AccessTokenFetcher
+        def provider = getProvider()
+        provider.addAccessTokenFetcher(new Repository('the_id',
+                                                      'http://our.repo.url:8080'),
+                                       tokenFetcher)
+        def authScope = new AuthScope('our.repo.url',
+                                      8080,
+                                      'realm',
+                                      'Basic')
+        def credentials = new AccessTokenCredentials('abc',
+                                                     500)
+        provider.setCredentials(authScope,
+                                credentials)
+
+        // act
+        def result = provider.getCredentials(authScope)
+
+        // assert
+        assertThat result.password,
+                   is(equalTo('def'))
+    }
+
+    @Test
     void clear_noExisting() {
         // arrange
         def provider = getProvider()

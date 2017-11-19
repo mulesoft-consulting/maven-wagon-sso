@@ -13,8 +13,15 @@ class AnypointTokenCredentialsProvider extends BasicCredentialsProvider {
     private final CredentialsProvider existingProvider
     private final static String BASIC_AUTH = AuthSchemes.BASIC.toUpperCase()
     private final Map<String, AccessTokenFetcher> fetchers = [:]
+    // 2 hours
+    private final static long DEFAULT_TOKEN_TIME_MS = Long.parseLong(
+            System.getProperty('anypoint.token.timeout.ms', (2 * 60 * 60 * 1000).toString())
+    )
+    private final long maxTokenLifeInMs
 
-    AnypointTokenCredentialsProvider(CredentialsProvider existingProvider = new BasicCredentialsProvider()) {
+    AnypointTokenCredentialsProvider(CredentialsProvider existingProvider = new BasicCredentialsProvider(),
+                                     long maxTokenLifeInMs = DEFAULT_TOKEN_TIME_MS) {
+        this.maxTokenLifeInMs = maxTokenLifeInMs
         this.existingProvider = existingProvider
     }
 
@@ -48,23 +55,36 @@ class AnypointTokenCredentialsProvider extends BasicCredentialsProvider {
     Credentials getCredentials(AuthScope authScope) {
         if (isBasicAuth(authScope)) {
             def existingCreds = super.getCredentials(authScope)
-            if (existingCreds) {
+            def expired = existingCreds &&
+                    (existingCreds instanceof AccessTokenCredentials) &&
+                    existingCreds.isExpired(maxTokenLifeInMs)
+            if (existingCreds && !expired) {
                 return existingCreds
             }
             def key = getKey(authScope.host,
                              authScope.port)
-            def accessTokenFetcher = fetchers[key]
-            if (accessTokenFetcher) {
-                log.info 'Existing credentials not available for {}, fetching',
-                         key
-                def credentials = new AccessTokenCredentials(accessTokenFetcher.accessToken, new Date())
-                this.setCredentials(authScope, credentials)
-                return credentials
+            if (fetchers.containsKey(key)) {
+                return getCredentialFromAccessTokenFetcher(expired,
+                                                           key,
+                                                           authScope)
             }
         }
         if (existingProvider) {
             existingProvider.getCredentials(authScope)
         }
+    }
+
+    private AccessTokenCredentials getCredentialFromAccessTokenFetcher(boolean expired,
+                                                                       String key,
+                                                                       AuthScope authScope) {
+        def accessTokenFetcher = fetchers[key]
+        def message = expired ? 'Token for {} has expired, fetching a new one' :
+                'Existing credentials not available for {}, fetching first one'
+        log.info message, key
+        def credentials = new AccessTokenCredentials(accessTokenFetcher.accessToken,
+                                                     System.currentTimeMillis())
+        this.setCredentials(authScope, credentials)
+        return credentials
     }
 
     @Override
