@@ -26,6 +26,7 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
     private CloseableHttpClient httpClient
     private boolean closed
     String samlIdpUrl
+    String anypointProfileUrl
 
     private static final int MAX_BACKOFF_WAIT_SECONDS = Integer.parseInt(
             System.getProperty("maven.wagon.httpconnectionManager.maxBackoffSeconds", "180"))
@@ -214,6 +215,7 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
             // a single repository
             builder.routePlanner = new DefaultProxyRoutePlanner(new HttpHost(proxyInfo.host, proxyInfo.port))
         }
+        // 'https://anypoint.mulesoft.com/accounts/api/profile'
         // this will get set by doing this, can control which repos we try and do SAML idp stuff for
 //        <configuration>
 //        <samlIdpUrl>true</samlIdpUrl>

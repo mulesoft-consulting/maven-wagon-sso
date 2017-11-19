@@ -9,7 +9,7 @@ class AccessTokenFetcher {
     private final String anypointProfileUrl
 
     AccessTokenFetcher(ProxyInfo proxyInfo,
-                       String anypointProfileUrl = 'https://anypoint.mulesoft.com/accounts/api/profile') {
+                       String anypointProfileUrl) {
         this.anypointProfileUrl = anypointProfileUrl
         client = new WebClient()
         client.webConnection = new HtmlUnitCustomizedWebConnection(this.client, proxyInfo)
@@ -22,7 +22,7 @@ class AccessTokenFetcher {
         def jsonProfile = client.getPage(anypointProfileUrl)
         def map = new JsonSlurper().parse(jsonProfile.webResponse.contentAsStream)
         def token = map['access_token']
-        assert token : "Unable to find access token in ${map}"
+        assert token: "Unable to find access token in ${map}"
         println 'Access token fetched'
         token
     }
