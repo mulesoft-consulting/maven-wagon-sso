@@ -604,6 +604,7 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
                     if (request.getHeader('Authorization') != 'Basic foooo') {
                         println ' Unauthorized, returning a 401'
                         statusCode = 401
+                        putHeader('WWW-Authenticate', 'Basic realm="User Visible Realm"')
                         end()
                         return
                     }
