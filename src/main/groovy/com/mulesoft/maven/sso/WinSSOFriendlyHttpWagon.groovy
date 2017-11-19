@@ -1,5 +1,6 @@
 package com.mulesoft.maven.sso
 
+import groovy.util.logging.Slf4j
 import org.apache.http.HttpException
 import org.apache.http.HttpHost
 import org.apache.http.client.methods.CloseableHttpResponse
@@ -22,6 +23,7 @@ import org.apache.maven.wagon.resource.Resource
 import java.text.SimpleDateFormat
 import java.util.concurrent.TimeUnit
 
+@Slf4j
 class WinSSOFriendlyHttpWagon extends StreamWagon {
     // this class is instantiated for each repository
     private CloseableHttpClient httpClient
@@ -219,6 +221,8 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
         }
         httpClientContext = HttpClientContext.create()
         if (samlIdpUrl) {
+            log.info 'Enabling Anypoint access token fetcher for repository {}',
+                     this.repository
             def profileUrl = this.anypointProfileUrl ?: 'https://anypoint.mulesoft.com/accounts/api/profile'
             def accessTokenFetcher = new AccessTokenFetcher(proxyInfo,
                                                             profileUrl,

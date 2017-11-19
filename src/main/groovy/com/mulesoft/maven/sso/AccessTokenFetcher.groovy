@@ -2,8 +2,10 @@ package com.mulesoft.maven.sso
 
 import com.gargoylesoftware.htmlunit.WebClient
 import groovy.json.JsonSlurper
+import groovy.util.logging.Slf4j
 import org.apache.maven.wagon.proxy.ProxyInfo
 
+@Slf4j
 class AccessTokenFetcher {
     private final WebClient client
     private final String anypointProfileUrl
@@ -19,14 +21,16 @@ class AccessTokenFetcher {
     }
 
     String getAccessToken() {
-        println "Triggering initial SAML flow with ${anypointProfileUrl}"
+        log.info "Triggering initial SAML flow with {}",
+                 anypointProfileUrl
         client.getPage(samlIdpUrl)
-        println "SAML Flow complete, now fetching access token from ${anypointProfileUrl}"
+        log.info "SAML Flow complete, now fetching access token from {}",
+                 anypointProfileUrl
         def jsonProfile = client.getPage(anypointProfileUrl)
         def map = new JsonSlurper().parse(jsonProfile.webResponse.contentAsStream)
         def token = map['access_token']
         assert token: "Unable to find access token in ${map}"
-        println 'Access token fetched'
+        log.info 'Access token fetched'
         token
     }
 }
