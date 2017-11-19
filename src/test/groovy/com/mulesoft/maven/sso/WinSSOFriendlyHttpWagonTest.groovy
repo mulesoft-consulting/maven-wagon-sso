@@ -253,7 +253,8 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
                         statusCode = 200
                         putHeader('Content-Type', 'application/json')
                         def response = [
-                                access_token: 'abcdef'
+                                access_token: 'abcdef',
+                                username: 'the_user'
                         ]
                         end(JsonOutput.toJson(response))
                         return
@@ -344,7 +345,8 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
                         statusCode = 200
                         putHeader('Content-Type', 'application/json')
                         def response = [
-                                access_token: expireCounter >= 2 ? 'foobar' : 'abcdef'
+                                access_token: expireCounter >= 2 ? 'foobar' : 'abcdef',
+                                username: 'the_user'
                         ]
                         end(JsonOutput.toJson(response))
                         return
