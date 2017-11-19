@@ -14,13 +14,12 @@ import static groovy.test.GroovyAssert.shouldFail
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
-class WinSSOFriendlyHttpWagonTest {
+class WinSSOFriendlyHttpWagonTest implements FileHelper {
     static String mvnExecutablePath
     static File mavenDir
     List<HttpServer> startedServers
     static File tmpDir = new File('tmp')
     static File scratchPad = new File(tmpDir, 'scratchpad')
-    static File testResources = getFile('src', 'test', 'resources')
 
     @BeforeClass
     static void setup() {
@@ -110,19 +109,7 @@ class WinSSOFriendlyHttpWagonTest {
         FileUtils.copyFileToDirectory(jarFile, extDir)
     }
 
-    static File getFile(String... parts) {
-        getFile(new File(parts[0]),
-                *parts[1..-1].toArray())
-    }
-
-    static File getFile(File file,
-                        String... parts) {
-        parts.inject(file) { File existing, String part ->
-            new File(existing, part)
-        }
-    }
-
-    static void runMaven(String settingsFilename,
+    void runMaven(String settingsFilename,
                          String pomFileName = 'pom_1_repo.xml',
                          String... goals = ['clean']) {
         def settings = getFile(testResources, settingsFilename)

@@ -208,7 +208,7 @@ class WinSSOFriendlyHttpWagon extends StreamWagon {
         builder.userAgent = 'AHC'
         def proxyInfo = getProxyInfo()
         if (proxyInfo) {
-            builder.routePlanner = new ProxyRoutePlanner(proxyInfo)
+            builder.routePlanner = new WagonProxyRoutePlanner(proxyInfo)
         }
         // this will get set by doing this, can control which repos we try and do SAML idp stuff for
 //        <configuration>
