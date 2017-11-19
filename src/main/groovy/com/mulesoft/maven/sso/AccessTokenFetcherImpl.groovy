@@ -30,7 +30,8 @@ class AccessTokenFetcherImpl implements AccessTokenFetcher {
         def map = new JsonSlurper().parse(jsonProfile.webResponse.contentAsStream)
         def token = map['access_token']
         assert token: "Unable to find access token in ${map}"
-        log.info 'Access token fetched'
+        log.info "Access token fetched, successfully authenticated as '{}'.",
+                 map['username']
         token
     }
 }

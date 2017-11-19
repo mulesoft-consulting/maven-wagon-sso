@@ -74,7 +74,8 @@ class AccessTokenFetcherImplTest implements FileHelper {
                         statusCode = 200
                         putHeader('Content-Type', 'application/json')
                         def response = [
-                                access_token: 'abcdef'
+                                access_token: 'abcdef',
+                                username: 'the_user'
                         ]
                         end(JsonOutput.toJson(response))
                         return
