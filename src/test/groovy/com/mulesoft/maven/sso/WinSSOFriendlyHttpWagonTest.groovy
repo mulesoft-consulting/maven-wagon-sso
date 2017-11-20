@@ -84,13 +84,16 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
     }
 
     static void executeMavenPhaseOrGoal(String... goals) {
-        // Windows doesn't have the execute bit
-        def shellExecutor = Os.isFamily(Os.FAMILY_WINDOWS) ? '' : 'sh '
         def command = "${shellExecutor}${mvnExecutablePath} ${goals.join(' ')}"
         println "Running Maven command: '${command}'"
         def result = command.execute()
         result.waitForProcessOutput(System.out, System.err)
         assert result.exitValue() == 0
+    }
+
+    private static String getShellExecutor() {
+        // Windows doesn't have the execute bit
+        Os.isFamily(Os.FAMILY_WINDOWS) ? '' : 'sh '
     }
 
     static void copyJar() {
@@ -99,7 +102,7 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
         def extDir = new File(libDir, 'ext')
         assert extDir.exists()
         println 'Building JAR via Gradle...'
-        def result = 'sh gradlew jar'.execute()
+        def result = "${shellExecutor}gradlew jar".execute()
         result.waitForProcessOutput(System.out, System.err)
         assert result.exitValue() == 0
         def jarFiles = new FileNameFinder().getFileNames('build/libs', '**/*.jar')
@@ -264,7 +267,7 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
                         putHeader('Content-Type', 'application/json')
                         def response = [
                                 access_token: 'abcdef',
-                                username: 'the_user'
+                                username    : 'the_user'
                         ]
                         end(JsonOutput.toJson(response))
                         return
@@ -356,7 +359,7 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
                         putHeader('Content-Type', 'application/json')
                         def response = [
                                 access_token: expireCounter >= 2 ? 'foobar' : 'abcdef',
-                                username: 'the_user'
+                                username    : 'the_user'
                         ]
                         end(JsonOutput.toJson(response))
                         return
@@ -422,7 +425,7 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
                  'pom_2madeupdependencies.xml',
                  'clean',
                  'compile',
-                '-Danypoint.token.timeout.ms=5'
+                 '-Danypoint.token.timeout.ms=5'
 
         // assert
         assert !exception
