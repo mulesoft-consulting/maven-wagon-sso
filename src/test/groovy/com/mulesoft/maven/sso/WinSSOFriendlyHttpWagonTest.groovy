@@ -84,7 +84,9 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
     }
 
     static void executeMavenPhaseOrGoal(String... goals) {
-        def command = "sh ${mvnExecutablePath} ${goals.join(' ')}"
+        // Windows doesn't have the execute bit
+        def shellExecutor = Os.isFamily(Os.FAMILY_WINDOWS) ? '' : 'sh '
+        def command = "${shellExecutor}${mvnExecutablePath} ${goals.join(' ')}"
         println "Running Maven command: '${command}'"
         def result = command.execute()
         result.waitForProcessOutput(System.out, System.err)
