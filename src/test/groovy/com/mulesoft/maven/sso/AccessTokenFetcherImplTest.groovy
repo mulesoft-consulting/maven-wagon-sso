@@ -94,17 +94,26 @@ class AccessTokenFetcherImplTest implements FileHelper, WebServerHelper {
                         end(file.text)
                         return
                     case 'http://anypoint.test.com/':
-                        def form = request.formAttributes()
-                        println "got form attr ${form}"
-                        if (form['SAMLResponse'] != 'the SAML stuff' || form['RelayState'] != 'the relay state2') {
+                        if (request.getHeader('Content-Type') != 'application/x-www-form-urlencoded') {
                             statusCode = 400
                             end('no saml posted')
                             return
                         }
-                        statusCode = 200
-                        putHeader('Content-Type', 'text/html')
-                        putHeader('Set-Cookie', 'somestuff=somevalue')
-                        end('<foo/>')
+                        request.expectMultipart = true
+                        request.endHandler {
+                            def form = request.formAttributes()
+                            println "---- got form attr ${form}"
+                            if (form['SAMLResponse'] != 'the SAML stuff' || form['RelayState'] != 'the relay state') {
+                                statusCode = 400
+                                end('no saml posted')
+                                return
+                            }
+                            statusCode = 200
+                            putHeader('Content-Type', 'text/html')
+                            putHeader('Set-Cookie', 'somestuff=somevalue')
+                            end('<foo/>')
+                            return
+                        }
                         return
                     case 'http://anypoint.test.com/profile_location/':
                         if (request.getHeader('Cookie') != 'somestuff=somevalue') {
