@@ -62,7 +62,8 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
         }
         mavenDir = new File(tmpDir, 'apache-maven-3.5.2')
         def binDir = new File(mavenDir, 'bin')
-        mvnExecutablePath = new File(binDir, 'mvn').absolutePath
+        def executable = Os.isFamily(Os.FAMILY_WINDOWS) ? 'mvn.cmd' : 'mvn'
+        mvnExecutablePath = new File(binDir, executable).absolutePath
         if (mavenDir.exists()) {
             executeMavenPhaseOrGoal('--version')
             println 'Maven already ready to go!'
