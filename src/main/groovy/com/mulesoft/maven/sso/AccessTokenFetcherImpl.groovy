@@ -52,8 +52,8 @@ class AccessTokenFetcherImpl implements AccessTokenFetcher {
         assert samlForm: "Expected a SAML form in response! ${responsePage.webResponse.contentAsString}"
         def request = new WebRequest(samlForm.actionAttribute.toURL())
         request.httpMethod = HttpMethod.POST
-        def params = samlForm.childElements.
-                findAll { element -> element instanceof HtmlInput }
+        def params = samlForm.childElements
+                .findAll { element -> element instanceof HtmlInput }
                 .collect { HtmlInput input ->
             new BasicNameValuePair(input.nameAttribute,
                                    input.valueAttribute)
