@@ -22,7 +22,7 @@ class AccessTokenFetcherImpl implements AccessTokenFetcher {
 
     String getAccessToken() {
         log.info "Triggering initial SAML flow with {}",
-                 anypointProfileUrl
+                 samlIdpUrl
         client.getPage(samlIdpUrl)
         log.info "SAML Flow complete, now fetching access token from {}",
                  anypointProfileUrl
