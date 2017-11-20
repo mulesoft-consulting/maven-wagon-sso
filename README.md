@@ -5,7 +5,7 @@
 
 # Installing
 
-1. Run gradlew clean install. This builds a JAR and installs in your Maven `lib/ext` directory.
+1. Run `gradlew clean install -PmavenHome=/your/maven/dir`. This builds a JAR and installs in your Maven `lib/ext` directory.
 2. Run a mvn clean compile -U on any project
 
 # Process

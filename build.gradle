@@ -1,10 +1,12 @@
-import java.util.regex.Pattern
-
 group 'com.brady'
 version '1.0-SNAPSHOT'
 
 configurations {
     provided
+}
+
+if (!hasProperty('mavenHome')) {
+    ext.mavenHome = 'usr/local/Cellar/maven/3.5.0/libexec'
 }
 
 apply plugin: 'java'
@@ -57,13 +59,7 @@ jar {
     }
 }
 
-def whereCommand = org.gradle.internal.os.OperatingSystem.current().isWindows() ? 'where mvn.cmd' : 'which mvn'
-def mvnPath = whereCommand.execute().text.trim()
-def mvnVersionOutput = "${mvnPath} --version".execute().text
-def mavenMatcher = Pattern.compile(/(?m)^Maven home: (.*)$/).matcher(mvnVersionOutput)
-assert mavenMatcher.find()
-def mavenHome = mavenMatcher.group(1)
-println "Derived Maven home directory as '${mavenHome}'"
+println "Assuming Maven home directory is '${mavenHome}'"
 
 def jarFile = jar.outputs.files[0]
 def libExt = new File(new File(mavenHome, 'lib'), 'ext')
