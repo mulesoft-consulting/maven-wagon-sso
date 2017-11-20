@@ -9,12 +9,12 @@ trait WebServerHelper {
     List<HttpServer> startedServers
 
     @Before
-    void cleanup() {
+    void initStartServers() {
         this.startedServers = []
     }
 
     @After
-    void shutdownServers() {
+    void shutdownWebServers() {
         this.startedServers.each { server ->
             println "Closing server ${server}..."
             server.close()
