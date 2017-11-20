@@ -11,7 +11,7 @@
             <active>true</active>
             <port>8081</port>
             <protocol>http</protocol>
-            <nonProxyHosts>repo.maven.apache.org</nonProxyHosts>
+            <nonProxyHosts>localhost|repo.maven.apache.org</nonProxyHosts>
         </proxy>
     </proxies>
     <servers>
