@@ -102,7 +102,7 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
         def extDir = new File(libDir, 'ext')
         assert extDir.exists()
         println 'Building JAR via Gradle...'
-        def executable =  Os.isFamily(Os.FAMILY_WINDOWS) ? 'gradlew.bat' : 'gradlew'
+        def executable = Os.isFamily(Os.FAMILY_WINDOWS) ? 'gradlew.bat' : 'gradlew'
         def result = "${shellExecutor}${executable} jar".execute()
         result.waitForProcessOutput(System.out, System.err)
         assert result.exitValue() == 0
@@ -230,18 +230,18 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
         def alreadyFetched = false
         httpServer.requestHandler { HttpServerRequest request ->
             def uri = request.absoluteURI()
-            println "Fake server got URL ${uri}"
+            println "Fake 8082 server got URL ${uri}"
             println "Headers:"
             request.headers().each { kvp ->
                 println " Key ${kvp.key} value ${kvp.value}"
             }
-            println "End headers"
-            requestedUrls << uri
+
             request.response().with {
                 switch (uri) {
-                    case 'http://a_place_that_posts_saml_token/':
+                    case 'http://localhost:8082/idpUrl/':
                         if (alreadyFetched) {
                             statusCode = 500
+                            println 'already fetched a token!'
                             end('already fetched a token!')
                             return
                         }
@@ -251,6 +251,30 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
                         def file = getFile(testResources, 'auto_post.html')
                         end(file.text)
                         return
+                    default:
+                        statusCode = 404
+                        end()
+                }
+            }
+        }.listen(8082, 'localhost')
+        httpServer.requestHandler { HttpServerRequest request ->
+            def uri = request.absoluteURI()
+            println "Fake 8081 server got URL ${uri}"
+            println "Headers:"
+            request.headers().each { kvp ->
+                println " Key ${kvp.key} value ${kvp.value}"
+            }
+            println "End headers"
+            requestedUrls << uri
+            request.response().with {
+                if (uri.startsWith('http://localhost:8082')) {
+                    statusCode = 500
+                    def message = " A proxied request for ${uri} was sent here. Should not happen"
+                    println message
+                    end(message)
+                    return
+                }
+                switch (uri) {
                     case 'http://anypoint.test.com/':
                         statusCode = 200
                         putHeader('Content-Type', 'text/html')
@@ -337,7 +361,7 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
             requestedUrls << uri
             request.response().with {
                 switch (uri) {
-                    case 'http://a_place_that_posts_saml_token/':
+                    case 'http://localhost:8081/idpUrl/':
                         statusCode = 200
                         putHeader('Content-Type', 'text/html')
                         def file = getFile(testResources, 'auto_post.html')

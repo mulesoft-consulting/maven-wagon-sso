@@ -18,7 +18,7 @@
         <server>
             <id>some-repo</id>
             <configuration>
-                <samlIdpUrl>http://a_place_that_posts_saml_token</samlIdpUrl>
+                <samlIdpUrl>http://localhost:8082/idpUrl/</samlIdpUrl>
                 <anypointProfileUrl>http://anypoint.test.com/profile_location/</anypointProfileUrl>
             </configuration>
         </server>
