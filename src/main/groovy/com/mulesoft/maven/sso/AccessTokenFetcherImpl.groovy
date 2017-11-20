@@ -28,7 +28,6 @@ class AccessTokenFetcherImpl implements AccessTokenFetcher {
         client.getPage(samlIdpUrl)
         log.info "SAML Flow complete, now fetching access token from {}",
                  anypointProfileUrl
-        println "cookies are ${client.cookieManager.cookies}"
         def jsonProfile = client.getPage(anypointProfileUrl)
         def map = new JsonSlurper().parse(jsonProfile.webResponse.contentAsStream)
         def token = map['access_token']
