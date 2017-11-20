@@ -76,6 +76,11 @@ class AccessTokenFetcherImplTest implements FileHelper, WebServerHelper {
                 println " header ${header.key} value ${header.value}"
             }
             request.response().with {
+                if (uri.endsWith('css')) {
+                    statusCode = 200
+                    end('foobar')
+                    return
+                }
                 switch (uri) {
                     case 'http://a_place_that_posts_saml_token/':
                         statusCode = 200

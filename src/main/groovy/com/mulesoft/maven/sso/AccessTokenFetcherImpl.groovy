@@ -1,6 +1,8 @@
 package com.mulesoft.maven.sso
 
 import com.gargoylesoftware.htmlunit.WebClient
+import com.gargoylesoftware.htmlunit.WebWindowEvent
+import com.gargoylesoftware.htmlunit.WebWindowListener
 import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import org.apache.maven.wagon.proxy.ProxyInfo
@@ -17,6 +19,7 @@ class AccessTokenFetcherImpl implements AccessTokenFetcher {
         this.samlIdpUrl = samlIdpUrl
         this.anypointProfileUrl = anypointProfileUrl
         client = new WindowsFriendlyWebClient(proxyInfo)
+        client.options.cssEnabled = false
     }
 
     String getAccessToken() {
@@ -25,6 +28,7 @@ class AccessTokenFetcherImpl implements AccessTokenFetcher {
         client.getPage(samlIdpUrl)
         log.info "SAML Flow complete, now fetching access token from {}",
                  anypointProfileUrl
+        println "cookies are ${client.cookieManager.cookies}"
         def jsonProfile = client.getPage(anypointProfileUrl)
         def map = new JsonSlurper().parse(jsonProfile.webResponse.contentAsStream)
         def token = map['access_token']
