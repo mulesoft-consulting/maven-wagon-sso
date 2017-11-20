@@ -3,6 +3,7 @@ package com.mulesoft.maven.sso
 import com.gargoylesoftware.htmlunit.HttpMethod
 import com.gargoylesoftware.htmlunit.Page
 import com.gargoylesoftware.htmlunit.WebClient
+import com.gargoylesoftware.htmlunit.WebClientOptions
 import com.gargoylesoftware.htmlunit.WebRequest
 import com.gargoylesoftware.htmlunit.html.HtmlInput
 import com.gargoylesoftware.htmlunit.html.HtmlPage
@@ -24,7 +25,9 @@ class AccessTokenFetcherImpl implements AccessTokenFetcher {
         this.samlIdpUrl = samlIdpUrl
         this.anypointProfileUrl = anypointProfileUrl
         client = new WindowsFriendlyWebClient(proxyInfo)
-        client.options.javaScriptEnabled = false
+        def options = client.options
+        options.javaScriptEnabled = false
+        options.cssEnabled = false
     }
 
     String getAccessToken() {
