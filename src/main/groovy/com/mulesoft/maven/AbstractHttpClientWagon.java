@@ -417,6 +417,8 @@ public abstract class AbstractHttpClientWagon
 
     private String samlIdpUrl;
 
+    private String anypointOrgId;
+
     private String anypointProfileUrl;
 
     public void openConnectionInternal()
@@ -427,6 +429,12 @@ public abstract class AbstractHttpClientWagon
 
         if (credentialsProvider == null) {
             credentialsProvider = new AnypointTokenCredentialsProvider();
+        }
+
+        if (anypointOrgId != null) {
+            // easy way to trigger the SAML iDP process without having to know the full URL
+            this.samlIdpUrl = String.format("https://anypoint.mulesoft.com/accounts/oauth2/authorize/%s?response_type=code",
+                                            this.anypointOrgId);
         }
 
         if (this.samlIdpUrl != null) {
