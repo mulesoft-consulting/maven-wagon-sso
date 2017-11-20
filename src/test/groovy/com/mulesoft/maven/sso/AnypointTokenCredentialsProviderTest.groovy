@@ -167,6 +167,37 @@ class AnypointTokenCredentialsProviderTest {
     }
 
     @Test
+    void getCredentials_Us_DefaultPort() {
+        // arrange
+        def fetched = false
+        def tokenFetcher = [
+                getAccessToken: {
+                    assert !fetched: 'Already fetched!'
+                    fetched = true
+                    'abc'
+                }
+        ] as AccessTokenFetcher
+        def provider = getProvider(null)
+        provider.addAccessTokenFetcher(new Repository('the_id',
+                                                      'http://our.repo.url:-1'),
+                                       tokenFetcher)
+        def authScope = new AuthScope('our.repo.url',
+                                      80,
+                                      'realm',
+                                      'Basic')
+
+        // act
+        def result = provider.getCredentials(authScope)
+
+        // assert
+        assertThat result.userPrincipal.name,
+                   is(equalTo('~~~Token~~~'))
+        assertThat result.password,
+                   is(equalTo('abc'))
+        provider.getCredentials(authScope)
+    }
+
+    @Test
     void getCredentials_Not_Configured() {
         // arrange
         def fetched = false

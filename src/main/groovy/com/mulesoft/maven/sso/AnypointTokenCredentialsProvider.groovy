@@ -1,11 +1,13 @@
 package com.mulesoft.maven.sso
 
 import groovy.util.logging.Slf4j
+import org.apache.http.HttpHost
 import org.apache.http.auth.AuthScope
 import org.apache.http.auth.Credentials
 import org.apache.http.client.CredentialsProvider
 import org.apache.http.client.config.AuthSchemes
 import org.apache.http.impl.client.BasicCredentialsProvider
+import org.apache.http.impl.conn.DefaultSchemePortResolver
 import org.apache.maven.wagon.repository.Repository
 
 @Slf4j
@@ -36,8 +38,16 @@ class AnypointTokenCredentialsProvider extends BasicCredentialsProvider {
 
     void addAccessTokenFetcher(Repository repository,
                                AccessTokenFetcher accessTokenFetcher) {
-        def key = getKey(repository.host,
-                         repository.port)
+        def port = repository.port
+        def host = repository.host
+        // -1 means the default port is being used according to the Maven repository, but we need
+        // it to be specific for authscope/httpclient to work properly
+        if (port == -1) {
+            def resolver = new DefaultSchemePortResolver()
+            port = resolver.resolve(new HttpHost(host, port, repository.protocol))
+        }
+        def key = getKey(host,
+                         port)
         // can't use URL, don't know full URL for auth scopes
         fetchers[key] = accessTokenFetcher
     }
