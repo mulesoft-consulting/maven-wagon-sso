@@ -1,7 +1,6 @@
 package com.mulesoft.maven.sso
 
 import groovy.json.JsonOutput
-import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.HttpServerRequest
 import org.apache.maven.wagon.proxy.ProxyInfo
 import org.junit.Test
@@ -84,6 +83,11 @@ class AccessTokenFetcherImplTest implements FileHelper, WebServerHelper {
                 }
                 switch (uri) {
                     case 'http://a_place_that_posts_saml_token/':
+                        statusCode = 302
+                        putHeader('Location', 'http://redirect.site/')
+                        end()
+                        return
+                    case 'http://redirect.site/':
                         statusCode = 200
                         putHeader('Content-Type', 'text/html')
                         def file = getFile(testResources, 'auto_post.html')
