@@ -103,6 +103,13 @@ class AccessTokenFetcherImplTest implements FileHelper {
             request.response().with {
                 switch (uri) {
                     case 'http://a_place_that_posts_saml_token/':
+                        if (!request.getHeader('Authorization')) {
+                            println '- got request w/o auth, forcing challenge'
+                            statusCode = 401
+                            putHeader('WWW-Authenticate', 'Basic realm="SSO Realm"')
+                            end()
+                            return
+                        }
                         statusCode = 200
                         putHeader('Content-Type', 'text/html')
                         def file = getFile(testResources, 'auto_post.html')
