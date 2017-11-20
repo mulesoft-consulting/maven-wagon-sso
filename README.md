@@ -43,6 +43,8 @@ To configure an Anypoint maven server, put something like this in settings.xml:
                 <!-- Your Anypoint organization name, the same name that goes into
                  Studio's authentication dialog. NOT a GUID -->
                 <anypointOrgId>the-org-id</anypointOrgId>
+                <!-- This has to be repeated due to a quirk in Maven -->
+                <nonProxyHosts>localhost|*.corporate.net</nonProxyHosts>
             </configuration>
         </server>
     </servers>

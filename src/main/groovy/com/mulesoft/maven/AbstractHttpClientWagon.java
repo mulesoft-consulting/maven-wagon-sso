@@ -421,6 +421,8 @@ public abstract class AbstractHttpClientWagon
 
     private String anypointProfileUrl;
 
+    private String nonProxyHosts;
+
     public void openConnectionInternal()
     {
         repository.setUrl( getURL( repository ) );
@@ -441,7 +443,17 @@ public abstract class AbstractHttpClientWagon
             if (anypointProfileUrl == null) {
                 anypointProfileUrl = "https://anypoint.mulesoft.com/accounts/api/profile";
             }
-            AccessTokenFetcherImpl tokenFetcher = new AccessTokenFetcherImpl(proxyInfo,
+
+            // for some reason, Maven doesn't return the nonProxyHosts configured in settings.xml with this
+            // so we have to have that supplied separately
+            ProxyInfo anypointProxyInfo = null;
+            if (proxyInfo != null) {
+                anypointProxyInfo = new ProxyInfo();
+                anypointProxyInfo.setHost(proxyInfo.getHost());
+                anypointProxyInfo.setPort(proxyInfo.getPort());
+                anypointProxyInfo.setNonProxyHosts(this.nonProxyHosts);
+            }
+            AccessTokenFetcherImpl tokenFetcher = new AccessTokenFetcherImpl(anypointProxyInfo,
                                                                              this.anypointProfileUrl,
                                                                              this.samlIdpUrl);
             ((AnypointTokenCredentialsProvider) credentialsProvider).addAccessTokenFetcher(getRepository(),

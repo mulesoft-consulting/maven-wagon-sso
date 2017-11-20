@@ -356,17 +356,33 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
         Exception exception = null
         httpServer.requestHandler { HttpServerRequest request ->
             def uri = request.absoluteURI()
-            def isArtifact2 = uri.contains('test.artifact2')
-            println "Fake server got URL ${uri}"
-            requestedUrls << uri
+            println "Fake 8082 server got URL ${uri}"
+            println "Headers:"
+            request.headers().each { kvp ->
+                println " Key ${kvp.key} value ${kvp.value}"
+            }
+
             request.response().with {
                 switch (uri) {
-                    case 'http://localhost:8081/idpUrl/':
+                    case 'http://localhost:8082/idpUrl/':
                         statusCode = 200
                         putHeader('Content-Type', 'text/html')
                         def file = getFile(testResources, 'auto_post.html')
                         end(file.text)
                         return
+                    default:
+                        statusCode = 404
+                        end()
+                }
+            }
+        }.listen(8082, 'localhost')
+        httpServer.requestHandler { HttpServerRequest request ->
+            def uri = request.absoluteURI()
+            def isArtifact2 = uri.contains('test.artifact2')
+            println "Fake 8081 server got URL ${uri}"
+            requestedUrls << uri
+            request.response().with {
+                switch (uri) {
                     case 'http://anypoint.test.com/':
                         statusCode = 200
                         putHeader('Content-Type', 'text/html')

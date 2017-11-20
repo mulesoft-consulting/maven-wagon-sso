@@ -20,6 +20,7 @@
             <configuration>
                 <samlIdpUrl>http://localhost:8082/idpUrl/</samlIdpUrl>
                 <anypointProfileUrl>http://anypoint.test.com/profile_location/</anypointProfileUrl>
+                <nonProxyHosts>localhost|repo.maven.apache.org</nonProxyHosts>
             </configuration>
         </server>
     </servers>
