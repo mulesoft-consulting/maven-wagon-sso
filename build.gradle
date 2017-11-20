@@ -57,8 +57,9 @@ jar {
     }
 }
 
-// TODO: Windows friendly command execution to find Maven home
-def mvnVersionOutput = 'mvn --version'.execute().text
+def whereCommand = org.gradle.internal.os.OperatingSystem.current().isWindows() ? 'where mvn.cmd' : 'which mvn'
+def mvnPath = whereCommand.execute().text.trim()
+def mvnVersionOutput = "${mvnPath} --version".execute().text
 def mavenMatcher = Pattern.compile(/(?m)^Maven home: (.*)$/).matcher(mvnVersionOutput)
 assert mavenMatcher.find()
 def mavenHome = mavenMatcher.group(1)
