@@ -102,7 +102,8 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
         def extDir = new File(libDir, 'ext')
         assert extDir.exists()
         println 'Building JAR via Gradle...'
-        def result = "${shellExecutor}gradlew jar".execute()
+        def executable =  Os.isFamily(Os.FAMILY_WINDOWS) ? 'gradlew.bat' : 'gradlew'
+        def result = "${shellExecutor}${executable} jar".execute()
         result.waitForProcessOutput(System.out, System.err)
         assert result.exitValue() == 0
         def jarFiles = new FileNameFinder().getFileNames('build/libs', '**/*.jar')
