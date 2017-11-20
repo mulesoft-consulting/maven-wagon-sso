@@ -1,6 +1,7 @@
 package com.mulesoft.maven.sso
 
 import groovy.json.JsonOutput
+import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.HttpServerRequest
 import org.apache.maven.wagon.proxy.ProxyInfo
 import org.junit.Test
@@ -89,6 +90,13 @@ class AccessTokenFetcherImplTest implements FileHelper, WebServerHelper {
                         end(file.text)
                         return
                     case 'http://anypoint.test.com/':
+                        def form = request.formAttributes()
+                        println "got form attr ${form}"
+                        if (form['SAMLResponse'] != 'the SAML stuff' || form['RelayState'] != 'the relay state2') {
+                            statusCode = 400
+                            end('no saml posted')
+                            return
+                        }
                         statusCode = 200
                         putHeader('Content-Type', 'text/html')
                         putHeader('Set-Cookie', 'somestuff=somevalue')

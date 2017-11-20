@@ -1,14 +1,11 @@
 <html>
-<body>
-<img src="should_not_be_downloaded.jpg">
-<link rel="stylesheet" href="should_not_be_downloaded.css">
-<form name="myForm" action="http://anypoint.test.com" method="POST">
-    <input type="submit" value="Submit"/></form>
-
-<script type="text/javascript">
-    window.onload = function () {
-        document.forms["myForm"].submit();
-    }
-</script>
-</body>
+    <head>
+        <title>working...</title>
+    </head>
+    <body>
+        <form method="POST" name="hiddenform" action="anypoint.test.com">
+            <input type="hidden" name="SAMLResponse" value="the SAML stuff">
+            <input type="hidden" name="RelayState" value="the relay state">
+        </form>
+    </body>
 </html>

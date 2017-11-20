@@ -19,7 +19,7 @@ class AccessTokenFetcherImpl implements AccessTokenFetcher {
         this.samlIdpUrl = samlIdpUrl
         this.anypointProfileUrl = anypointProfileUrl
         client = new WindowsFriendlyWebClient(proxyInfo)
-        client.options.cssEnabled = false
+        client.options.javaScriptEnabled = false
     }
 
     String getAccessToken() {
