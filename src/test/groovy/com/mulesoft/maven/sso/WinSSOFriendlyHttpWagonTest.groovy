@@ -1,21 +1,21 @@
 package com.mulesoft.maven.sso
 
 import groovy.json.JsonOutput
-import io.vertx.core.Vertx
-import io.vertx.core.http.HttpServer
 import io.vertx.core.http.HttpServerRequest
 import org.apache.tools.ant.taskdefs.condition.Os
 import org.codehaus.plexus.util.FileUtils
-import org.junit.*
+import org.junit.Assume
+import org.junit.Before
+import org.junit.BeforeClass
+import org.junit.Test
 
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.is
 import static org.junit.Assert.assertThat
 
-class WinSSOFriendlyHttpWagonTest implements FileHelper {
+class WinSSOFriendlyHttpWagonTest implements FileHelper, WebServerHelper {
     static String mvnExecutablePath
     static File mavenDir
-    List<HttpServer> startedServers
     static File tmpDir = new File('tmp')
     static File scratchPad = new File(tmpDir, 'scratchpad')
 
@@ -27,7 +27,6 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
 
     @Before
     void cleanup() {
-        this.startedServers = []
         if (System.getProperty('SKIP_REPO_CLEAN')) {
             println '***********Skipping repo clean!'
             return
@@ -39,20 +38,6 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper {
         if (scratchPad.exists()) {
             assert scratchPad.deleteDir()
         }
-    }
-
-    @After
-    void shutdownServers() {
-        this.startedServers.each { server ->
-            println "Closing server ${server}..."
-            server.close()
-        }
-    }
-
-    HttpServer getHttpServer() {
-        def httpServer = Vertx.vertx().createHttpServer()
-        startedServers << httpServer
-        httpServer
     }
 
     static void downloadMaven() {

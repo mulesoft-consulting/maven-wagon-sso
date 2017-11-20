@@ -7,13 +7,15 @@ import org.apache.http.impl.client.HttpClientBuilder
 import org.apache.http.impl.client.WinHttpClients
 import org.apache.maven.wagon.proxy.ProxyInfo
 
-class HtmlUnitCustomizedWebConnection extends HttpWebConnection {
+class WindowsFriendlyWebConnection extends HttpWebConnection {
     private final ProxyInfo proxyInfo
 
-    HtmlUnitCustomizedWebConnection(WebClient webClient,
-                                    ProxyInfo proxyInfo) {
+    WindowsFriendlyWebConnection(WebClient webClient,
+                                 ProxyInfo proxyInfo) {
         super(webClient)
         this.proxyInfo = proxyInfo
+        // htmlunit will overwrite what our builder below does when it runs
+        // unfortunately we can't fetch the credentials provider from the builder itself
     }
 
     @Override

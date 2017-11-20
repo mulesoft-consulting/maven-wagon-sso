@@ -1,40 +1,15 @@
 package com.mulesoft.maven.sso
 
 import groovy.json.JsonOutput
-import io.vertx.core.Vertx
-import io.vertx.core.http.HttpServer
 import io.vertx.core.http.HttpServerRequest
 import org.apache.maven.wagon.proxy.ProxyInfo
-import org.junit.After
-import org.junit.Before
 import org.junit.Test
 
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.is
 import static org.junit.Assert.assertThat
 
-class AccessTokenFetcherImplTest implements FileHelper {
-    List<HttpServer> startedServers
-
-    @Before
-    void cleanup() {
-        this.startedServers = []
-    }
-
-    @After
-    void shutdownServers() {
-        this.startedServers.each { server ->
-            println "Closing server ${server}..."
-            server.close()
-        }
-    }
-
-    HttpServer getHttpServer() {
-        def httpServer = Vertx.vertx().createHttpServer()
-        startedServers << httpServer
-        httpServer
-    }
-
+class AccessTokenFetcherImplTest implements FileHelper, WebServerHelper {
     @Test
     void getAccessToken_noProxy() {
         // arrange
@@ -44,7 +19,7 @@ class AccessTokenFetcherImplTest implements FileHelper {
         httpServer.requestHandler { HttpServerRequest request ->
             def uri = request.absoluteURI()
             println "fake server got ${uri}"
-            request.headers().each {header ->
+            request.headers().each { header ->
                 println " header ${header.key} value ${header.value}"
             }
             request.response().with {
@@ -66,7 +41,7 @@ class AccessTokenFetcherImplTest implements FileHelper {
                         putHeader('Content-Type', 'application/json')
                         def response = [
                                 access_token: 'abcdef',
-                                username: 'the_user'
+                                username    : 'the_user'
                         ]
                         end(JsonOutput.toJson(response))
                         return
@@ -97,7 +72,7 @@ class AccessTokenFetcherImplTest implements FileHelper {
         httpServer.requestHandler { HttpServerRequest request ->
             def uri = request.absoluteURI()
             println "fake proxy got ${uri}"
-            request.headers().each {header ->
+            request.headers().each { header ->
                 println " header ${header.key} value ${header.value}"
             }
             request.response().with {
@@ -132,7 +107,7 @@ class AccessTokenFetcherImplTest implements FileHelper {
                         putHeader('Content-Type', 'application/json')
                         def response = [
                                 access_token: 'abcdef',
-                                username: 'the_user'
+                                username    : 'the_user'
                         ]
                         end(JsonOutput.toJson(response))
                         return
