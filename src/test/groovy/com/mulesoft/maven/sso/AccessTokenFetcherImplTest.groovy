@@ -36,6 +36,56 @@ class AccessTokenFetcherImplTest implements FileHelper {
     }
 
     @Test
+    void getAccessToken_noProxy() {
+        // arrange
+        def fetcher = new AccessTokenFetcherImpl(null,
+                                                 'http://localhost:8081/profile',
+                                                 'http://localhost:8081/idpurl')
+        httpServer.requestHandler { HttpServerRequest request ->
+            def uri = request.absoluteURI()
+            println "fake server got ${uri}"
+            request.headers().each {header ->
+                println " header ${header.key} value ${header.value}"
+            }
+            request.response().with {
+                switch (uri) {
+                    case 'http://localhost:8081/idpurl':
+                        statusCode = 200
+                        putHeader('Content-Type', 'text/html')
+                        putHeader('Set-Cookie', 'somestuff=somevalue')
+                        end('<foo/>')
+                        return
+                    case 'http://localhost:8081/profile':
+                        if (request.getHeader('Cookie') != 'somestuff=somevalue') {
+                            println ' no cookie supplied, sending back 401'
+                            statusCode = 401
+                            end()
+                            return
+                        }
+                        statusCode = 200
+                        putHeader('Content-Type', 'application/json')
+                        def response = [
+                                access_token: 'abcdef',
+                                username: 'the_user'
+                        ]
+                        end(JsonOutput.toJson(response))
+                        return
+                    default:
+                        statusCode = 404
+                        end()
+                }
+            }
+        }.listen(8081, 'localhost')
+
+        // act
+        def result = fetcher.getAccessToken()
+
+        // assert
+        assertThat result,
+                   is(equalTo('abcdef'))
+    }
+
+    @Test
     void getAccessToken() {
         // arrange
         def proxyInfo = new ProxyInfo()
