@@ -7,6 +7,7 @@ import org.apache.http.client.entity.UrlEncodedFormEntity
 import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.client.methods.HttpPost
+import org.apache.http.entity.ContentType
 import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.impl.client.HttpClientBuilder
 import org.apache.http.impl.client.LaxRedirectStrategy
@@ -55,7 +56,9 @@ class AccessTokenFetcherImpl implements AccessTokenFetcher {
             response = client.execute(get)
             def statusLine = response.statusLine
             assert statusLine.statusCode == HttpStatus.SC_OK: "While trying to fetch profile/JSON, content type was not what was exoected - ${statusLine}"
-            assert response.getLastHeader('Content-Type').value == 'application/json'
+            def actualType = ContentType.parse(response.entity.contentType.value)
+            actualType = actualType.withCharset(actualType.charset?.name()?.toUpperCase() ?: 'UTF-8')
+            assert actualType.toString() == ContentType.APPLICATION_JSON.toString()
             def map = new JsonSlurper().parse(response.entity.content)
             def token = map['access_token']
             assert token: "Unable to find access token in ${map}"

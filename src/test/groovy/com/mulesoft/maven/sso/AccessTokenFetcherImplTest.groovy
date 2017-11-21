@@ -259,7 +259,7 @@ class AccessTokenFetcherImplTest implements FileHelper, WebServerHelper {
                             return
                         }
                         statusCode = 200
-                        putHeader('Content-Type', 'application/json')
+                        putHeader('Content-Type', 'application/json; charset=utf-8')
                         def response = [
                                 access_token: 'abcdef',
                                 username    : 'the_user'
