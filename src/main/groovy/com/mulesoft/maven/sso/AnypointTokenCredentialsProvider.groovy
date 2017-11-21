@@ -75,24 +75,24 @@ class AnypointTokenCredentialsProvider implements CredentialsProvider {
         def key = getKey(authScope.host,
                          authScope.port)
         if (fetchers.containsKey(key)) {
-            return getCredentialFromAccessTokenFetcher(expired,
-                                                       key,
-                                                       authScope)
+            def credentials = getCredentialFromAccessTokenFetcher(expired,
+                                                                  key)
+            // don't want to have to re-fetch the access token over and over again
+            // so cache it by setting it
+            this.setCredentials(authScope, credentials)
+            return credentials
         }
         return null
     }
 
     private Credentials getCredentialFromAccessTokenFetcher(boolean expired,
-                                                            String key,
-                                                            AuthScope authScope) {
+                                                            String key) {
         def accessTokenFetcher = fetchers[key]
         def message = expired ? 'Token for {} has expired, fetching a new one' :
                 'Existing credentials not available for {}, fetching first one'
         log.info message, key
-        def credentials = new AccessTokenCredentials(accessTokenFetcher.accessToken,
-                                                     System.currentTimeMillis())
-        this.setCredentials(authScope, credentials)
-        return credentials
+        new AccessTokenCredentials(accessTokenFetcher.accessToken,
+                                   System.currentTimeMillis())
     }
 
     @Override
