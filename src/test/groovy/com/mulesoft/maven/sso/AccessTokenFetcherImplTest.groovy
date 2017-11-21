@@ -201,7 +201,6 @@ class AccessTokenFetcherImplTest implements FileHelper, WebServerHelper {
                    is(containsString('Unauthorized'))
     }
 
-
     @Test
     void getAccessToken_proxied() {
         // arrange
@@ -251,6 +250,92 @@ class AccessTokenFetcherImplTest implements FileHelper, WebServerHelper {
                             end('<foo/>')
                             return
                         }
+                        return
+                    case 'http://anypoint.test.com/profile_location/':
+                        if (request.getHeader('Cookie') != 'somestuff=somevalue') {
+                            println ' no cookie supplied, sending back 401'
+                            statusCode = 401
+                            end()
+                            return
+                        }
+                        statusCode = 200
+                        putHeader('Content-Type', 'application/json')
+                        def response = [
+                                access_token: 'abcdef',
+                                username    : 'the_user'
+                        ]
+                        end(JsonOutput.toJson(response))
+                        return
+                    default:
+                        statusCode = 404
+                        end()
+                }
+            }
+        }.listen(8081, 'localhost')
+
+        // act
+        def result = fetcher.getAccessToken()
+
+        // assert
+        assertThat result,
+                   is(equalTo('abcdef'))
+    }
+
+
+    @Test
+    void getAccessToken_redirected_at_saml_post() {
+        // arrange
+        def proxyInfo = new ProxyInfo()
+        proxyInfo.host = 'localhost'
+        proxyInfo.port = 8081
+        def fetcher = new AccessTokenFetcherImpl(proxyInfo,
+                                                 'http://anypoint.test.com/profile_location/',
+                                                 'http://a_place_that_posts_saml_token')
+        httpServer.requestHandler { HttpServerRequest request ->
+            def uri = request.absoluteURI()
+            println "fake proxy got ${uri}"
+            request.headers().each { header ->
+                println " header ${header.key} value ${header.value}"
+            }
+            request.response().with {
+                switch (uri) {
+                    case 'http://a_place_that_posts_saml_token/':
+                        statusCode = 302
+                        putHeader('Location', 'http://redirect.site/')
+                        end()
+                        return
+                    case 'http://redirect.site/':
+                        statusCode = 200
+                        putHeader('Content-Type', 'text/html')
+                        def file = getFile(testResources, 'auto_post.html')
+                        end(file.text)
+                        return
+                    case 'http://anypoint.test.com/':
+                        if (request.getHeader('Content-Type') != 'application/x-www-form-urlencoded') {
+                            statusCode = 400
+                            end('no saml posted')
+                            return
+                        }
+                        request.expectMultipart = true
+                        request.endHandler {
+                            def form = request.formAttributes()
+                            println "---- got form attr ${form}"
+                            if (form['SAMLResponse'] != 'the SAML stuff' || form['RelayState'] != 'the relay state') {
+                                statusCode = 400
+                                end('no saml posted')
+                                return
+                            }
+                            statusCode = 302
+                            putHeader('Location', '/victory')
+                            end()
+                            return
+                        }
+                        return
+                    case 'http://anypoint.test.com/victory':
+                        statusCode = 200
+                        putHeader('Content-Type', 'text/html')
+                        putHeader('Set-Cookie', 'somestuff=somevalue')
+                        end('<foo/>')
                         return
                     case 'http://anypoint.test.com/profile_location/':
                         if (request.getHeader('Cookie') != 'somestuff=somevalue') {

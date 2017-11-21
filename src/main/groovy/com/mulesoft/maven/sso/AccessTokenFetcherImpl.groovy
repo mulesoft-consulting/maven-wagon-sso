@@ -9,6 +9,7 @@ import org.apache.http.client.methods.HttpGet
 import org.apache.http.client.methods.HttpPost
 import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.impl.client.HttpClientBuilder
+import org.apache.http.impl.client.LaxRedirectStrategy
 import org.apache.http.impl.client.WinHttpClients
 import org.apache.http.message.BasicNameValuePair
 import org.apache.maven.wagon.proxy.ProxyInfo
@@ -25,7 +26,8 @@ class AccessTokenFetcherImpl implements AccessTokenFetcher {
                            String samlIdpUrl) {
         this.samlIdpUrl = samlIdpUrl
         this.anypointProfileUrl = anypointProfileUrl
-        clientBuilder = WinHttpClients.custom()
+        clientBuilder = WinHttpClients.custom() // don't want our SAML POST to not redirect
+                .setRedirectStrategy(new LaxRedirectStrategy())
         if (proxyInfo) {
             clientBuilder.routePlanner = new WagonProxyInfoRoutePlanner(proxyInfo)
         }
@@ -52,7 +54,7 @@ class AccessTokenFetcherImpl implements AccessTokenFetcher {
             get = new HttpGet(anypointProfileUrl)
             response = client.execute(get)
             def statusLine = response.statusLine
-            assert statusLine.statusCode == HttpStatus.SC_OK: "While trying to fetch profile/JSON, content type was not what was exoected - ${statusLine.reasonPhrase}"
+            assert statusLine.statusCode == HttpStatus.SC_OK: "While trying to fetch profile/JSON, content type was not what was exoected - ${statusLine}"
             assert response.getLastHeader('Content-Type').value == 'application/json'
             def map = new JsonSlurper().parse(response.entity.content)
             def token = map['access_token']
@@ -73,7 +75,7 @@ class AccessTokenFetcherImpl implements AccessTokenFetcher {
                                            CloseableHttpClient client,
                                            String url) {
         def statusLine = response.statusLine
-        assert statusLine.statusCode == HttpStatus.SC_OK: "While trying to fetch SAML IDP URL - ${statusLine.reasonPhrase}"
+        assert statusLine.statusCode == HttpStatus.SC_OK: "While trying to fetch SAML IDP URL - ${statusLine}"
         def parsedDocument = Jsoup.parse(response.entity.content,
                                          'utf-8',
                                          url)
@@ -93,7 +95,7 @@ class AccessTokenFetcherImpl implements AccessTokenFetcher {
         response = client.execute(post)
         statusLine = response.statusLine
         try {
-            assert statusLine.statusCode == HttpStatus.SC_OK: "While trying to post SAML assertion - ${statusLine.reasonPhrase}"
+            assert statusLine.statusCode == HttpStatus.SC_OK: "While trying to post SAML assertion - got ${statusLine}"
         }
         finally {
             response.close()
