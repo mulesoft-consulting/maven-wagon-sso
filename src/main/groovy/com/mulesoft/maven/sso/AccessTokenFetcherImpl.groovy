@@ -89,8 +89,9 @@ class AccessTokenFetcherImpl implements AccessTokenFetcher {
                  post.getURI()
         post.entity = new UrlEncodedFormEntity(parameters)
         response = client.execute(post)
+        statusLine = response.statusLine
         try {
-
+            assert statusLine.statusCode == HttpStatus.SC_OK : "While trying to post SAML assertion - ${statusLine.reasonPhrase}"
         }
         finally {
             response.close()
