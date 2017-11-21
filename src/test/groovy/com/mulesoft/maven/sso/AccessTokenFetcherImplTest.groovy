@@ -25,6 +25,18 @@ class AccessTokenFetcherImplTest implements FileHelper, WebServerHelper {
             request.response().with {
                 switch (uri) {
                     case 'http://localhost:8081/idpurl':
+                        println ' returning auto post form'
+                        statusCode = 200
+                        putHeader('Content-Type', 'text/html')
+                        def file = getFile(testResources, 'auto_post_no_proxy.html')
+                        end(file.text)
+                        return
+                    case 'http://localhost:8081/anypointUrl':
+                        if (request.getHeader('Content-Type') != 'application/x-www-form-urlencoded') {
+                            statusCode = 400
+                            end()
+                            return
+                        }
                         statusCode = 200
                         putHeader('Content-Type', 'text/html')
                         putHeader('Set-Cookie', 'somestuff=somevalue')

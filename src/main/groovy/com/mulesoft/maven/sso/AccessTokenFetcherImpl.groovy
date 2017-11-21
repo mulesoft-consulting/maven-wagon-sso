@@ -3,7 +3,6 @@ package com.mulesoft.maven.sso
 import com.gargoylesoftware.htmlunit.HttpMethod
 import com.gargoylesoftware.htmlunit.Page
 import com.gargoylesoftware.htmlunit.WebClient
-import com.gargoylesoftware.htmlunit.WebClientOptions
 import com.gargoylesoftware.htmlunit.WebRequest
 import com.gargoylesoftware.htmlunit.html.HtmlInput
 import com.gargoylesoftware.htmlunit.html.HtmlPage
@@ -66,6 +65,8 @@ class AccessTokenFetcherImpl implements AccessTokenFetcher {
         def header = entity.contentType
         request.setAdditionalHeader(header.name,
                                     header.value)
+        log.info 'Posting SAML assertions back to {}',
+                 request.url
         client.getPage(request)
     }
 }
