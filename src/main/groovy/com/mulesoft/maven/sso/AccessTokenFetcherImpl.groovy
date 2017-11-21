@@ -2,6 +2,8 @@ package com.mulesoft.maven.sso
 
 import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
+import org.apache.http.HttpStatus
+import org.apache.http.StatusLine
 import org.apache.http.client.entity.UrlEncodedFormEntity
 import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.client.methods.HttpGet
@@ -68,6 +70,8 @@ class AccessTokenFetcherImpl implements AccessTokenFetcher {
     private static void handleSamlResponse(CloseableHttpResponse response,
                                            CloseableHttpClient client,
                                            String url) {
+        def statusLine = response.statusLine
+        assert statusLine.statusCode == HttpStatus.SC_OK : "While trying to fetch SAML IDP URL - ${statusLine.reasonPhrase}"
         def parsedDocument = Jsoup.parse(response.entity.content,
                                          'utf-8',
                                          url)

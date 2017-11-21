@@ -5,6 +5,8 @@ import io.vertx.core.http.HttpServerRequest
 import org.apache.maven.wagon.proxy.ProxyInfo
 import org.junit.Test
 
+import static groovy.test.GroovyAssert.shouldFail
+import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.is
 import static org.junit.Assert.assertThat
@@ -73,6 +75,43 @@ class AccessTokenFetcherImplTest implements FileHelper, WebServerHelper {
     }
 
     @Test
+    void getAccessToken_initialAccessDenied() {
+        // arrange
+        def proxyInfo = new ProxyInfo()
+        proxyInfo.host = 'localhost'
+        proxyInfo.port = 8081
+        def fetcher = new AccessTokenFetcherImpl(proxyInfo,
+                                                 'http://anypoint.test.com/profile_location/',
+                                                 'http://a_place_that_posts_saml_token')
+        httpServer.requestHandler { HttpServerRequest request ->
+            def uri = request.absoluteURI()
+            println "fake proxy got ${uri}"
+            request.headers().each { header ->
+                println " header ${header.key} value ${header.value}"
+            }
+            request.response().with {
+                switch (uri) {
+                    case 'http://a_place_that_posts_saml_token/':
+                        statusCode = 401
+                        end('never give you access')
+                        return
+                    default:
+                        statusCode = 404
+                        end()
+                }
+            }
+        }.listen(8081, 'localhost')
+
+        // act + assert
+        def exception = shouldFail {
+            fetcher.getAccessToken()
+        }
+
+        assertThat exception.message,
+                is(containsString('Unauthorized'))
+    }
+
+    @Test
     void getAccessToken() {
         // arrange
         def proxyInfo = new ProxyInfo()
@@ -81,7 +120,6 @@ class AccessTokenFetcherImplTest implements FileHelper, WebServerHelper {
         def fetcher = new AccessTokenFetcherImpl(proxyInfo,
                                                  'http://anypoint.test.com/profile_location/',
                                                  'http://a_place_that_posts_saml_token')
-        def cssRetrieved = false
         httpServer.requestHandler { HttpServerRequest request ->
             def uri = request.absoluteURI()
             println "fake proxy got ${uri}"
@@ -89,12 +127,6 @@ class AccessTokenFetcherImplTest implements FileHelper, WebServerHelper {
                 println " header ${header.key} value ${header.value}"
             }
             request.response().with {
-                if (uri.endsWith('css')) {
-                    statusCode = 404
-                    cssRetrieved = true
-                    end()
-                    return
-                }
                 switch (uri) {
                     case 'http://a_place_that_posts_saml_token/':
                         statusCode = 302
@@ -157,7 +189,5 @@ class AccessTokenFetcherImplTest implements FileHelper, WebServerHelper {
         // assert
         assertThat result,
                    is(equalTo('abcdef'))
-        assertThat cssRetrieved,
-                   is(equalTo(false))
     }
 }
