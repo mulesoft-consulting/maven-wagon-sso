@@ -11,7 +11,7 @@
 # Process
 
 1. Wagon behaves as traditional Maven would until a server is encountered with the `samlIdpUrl` config setting.
-1. At that point, the first time it's challenged for authentication by the server (which is usually when fetching the remote artifact's POM, `maven-metadata.xml` is not restricted), it will get an access token by mimicking a user's browser flow and then authenticate as described at [the Exchange publishd doc](https://docs.mulesoft.com/anypoint-exchange/to-publish-assets-maven#to-publish-federated-assets)
+1. At that point, the first time it's challenged for authentication by the server (which is usually when fetching the remote artifact's POM, `maven-metadata.xml` is not restricted), it will get an access token by mimicking a user's browser flow and then authenticate as described at [the Exchange published doc](https://docs.mulesoft.com/anypoint-exchange/to-publish-assets-maven#to-publish-federated-assets)
 1. Tokens are not persisted. They are held on to in memory for as long as needed by the Maven run. Subsequent runs will fetch new tokens.
 
 # Using
@@ -58,5 +58,4 @@ To configure an Anypoint maven server, put something like this in settings.xml:
 
 # TODOs
 
-1. Instead of requiring the full IDP url, could just take in the org ID like Studio and configure an AMC URL that will do the IDP redirect.
-1. The build will bundle lots of JAR dependencies into the finished product, which is quite large (20MB). There are probably classes in the JAR that aren't used. If someone had the time and the shadow/jar plugins for Gradle can aid in this, might be nice to only bundled classes that are used (and not already present with Maven)
+1. The build will bundle lots of JAR dependencies into the finished product, which is quite large (10MB). There are probably classes in the JAR that aren't used. If someone had the time and the shadow/jar plugins for Gradle can aid in this, might be nice to only bundled classes that are used (and not already present with Maven)
