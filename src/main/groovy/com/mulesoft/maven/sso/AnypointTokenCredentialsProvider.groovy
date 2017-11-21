@@ -82,9 +82,9 @@ class AnypointTokenCredentialsProvider implements CredentialsProvider {
         return null
     }
 
-    private AccessTokenCredentials getCredentialFromAccessTokenFetcher(boolean expired,
-                                                                       String key,
-                                                                       AuthScope authScope) {
+    private Credentials getCredentialFromAccessTokenFetcher(boolean expired,
+                                                            String key,
+                                                            AuthScope authScope) {
         def accessTokenFetcher = fetchers[key]
         def message = expired ? 'Token for {} has expired, fetching a new one' :
                 'Existing credentials not available for {}, fetching first one'
