@@ -12,10 +12,6 @@ import static org.junit.Assert.assertThat
 
 @SuppressWarnings("GroovyAssignabilityCheck")
 class AnypointTokenCredentialsProviderTest {
-    private AnypointTokenCredentialsProvider getProvider(CredentialsProvider existing = null) {
-        new AnypointTokenCredentialsProvider(existing)
-    }
-
     @Test
     void setCredentials_existingProviderAvailable_notOurScheme() {
         // arrange
@@ -28,7 +24,7 @@ class AnypointTokenCredentialsProviderTest {
 
                 }
         ] as CredentialsProvider
-        def provider = getProvider(existing)
+        def provider = new AnypointTokenCredentialsProvider(existing)
         def authScope = new AuthScope('our.repo.url',
                                       8080,
                                       'realm',
@@ -48,7 +44,7 @@ class AnypointTokenCredentialsProviderTest {
     @Test
     void setCredentials_basicScheme() {
         // arrange
-        def provider = getProvider()
+        def provider = new AnypointTokenCredentialsProvider()
         def authScope = new AuthScope('other.repo.url',
                                       8080,
                                       'realm',
@@ -71,7 +67,7 @@ class AnypointTokenCredentialsProviderTest {
                     new UsernamePasswordCredentials('user', 'pass')
                 }
         ] as CredentialsProvider
-        def provider = getProvider(existing)
+        def provider = new AnypointTokenCredentialsProvider(existing)
         def authScope = new AuthScope('our.repo.url',
                                       8080,
                                       'realm',
@@ -87,7 +83,7 @@ class AnypointTokenCredentialsProviderTest {
     @Test
     void getCredentials_noAccessToken_notOurHostName() {
         // arrange
-        def provider = getProvider()
+        def provider = new AnypointTokenCredentialsProvider()
         def authScope = new AuthScope('other.repo.url',
                                       8080,
                                       'realm',
@@ -103,7 +99,7 @@ class AnypointTokenCredentialsProviderTest {
     @Test
     void getCredentials_noAccessToken_notOurPort() {
         // arrange
-        def provider = getProvider()
+        def provider = new AnypointTokenCredentialsProvider()
         def authScope = new AuthScope('our.repo.url',
                                       8081,
                                       'realm',
@@ -119,7 +115,7 @@ class AnypointTokenCredentialsProviderTest {
     @Test
     void getCredentials_notOurPort_AlreadyStored() {
         // arrange
-        def provider = getProvider()
+        def provider = new AnypointTokenCredentialsProvider()
         def authScope = new AuthScope('our.repo.url',
                                       8081,
                                       'realm',
@@ -146,7 +142,7 @@ class AnypointTokenCredentialsProviderTest {
                     'abc'
                 }
         ] as AccessTokenFetcher
-        def provider = getProvider(null)
+        def provider = new AnypointTokenCredentialsProvider()
         provider.addAccessTokenFetcher(new Repository('the_id',
                                                       'http://our.repo.url:8080'),
                                        tokenFetcher)
@@ -177,7 +173,7 @@ class AnypointTokenCredentialsProviderTest {
                     'abc'
                 }
         ] as AccessTokenFetcher
-        def provider = getProvider(null)
+        def provider = new AnypointTokenCredentialsProvider()
         provider.addAccessTokenFetcher(new Repository('the_id',
                                                       'http://our.repo.url:-1'),
                                        tokenFetcher)
@@ -208,7 +204,7 @@ class AnypointTokenCredentialsProviderTest {
                     'abc'
                 }
         ] as AccessTokenFetcher
-        def provider = getProvider(null)
+        def provider = new AnypointTokenCredentialsProvider()
         provider.addAccessTokenFetcher(new Repository('the_id',
                                                       'http://our.repo.url:8080'),
                                        tokenFetcher)
@@ -228,7 +224,7 @@ class AnypointTokenCredentialsProviderTest {
     @Test
     void getCredentials_Us_Already_Fetched() {
         // arrange
-        def provider = getProvider()
+        def provider = new AnypointTokenCredentialsProvider()
         def authScope = new AuthScope('our.repo.url',
                                       8080,
                                       'realm',
@@ -253,7 +249,7 @@ class AnypointTokenCredentialsProviderTest {
                     'def'
                 }
         ] as AccessTokenFetcher
-        def provider = getProvider()
+        def provider = new AnypointTokenCredentialsProvider()
         provider.addAccessTokenFetcher(new Repository('the_id',
                                                       'http://our.repo.url:8080'),
                                        tokenFetcher)
@@ -277,7 +273,7 @@ class AnypointTokenCredentialsProviderTest {
     @Test
     void clear_noExisting() {
         // arrange
-        def provider = getProvider()
+        def provider = new AnypointTokenCredentialsProvider()
         def authScope = new AuthScope('our.repo.url',
                                       8081,
                                       'realm',
@@ -299,6 +295,8 @@ class AnypointTokenCredentialsProviderTest {
         // arrange
         def existingCleared = false
         def existing = [
+                setCredentials: { AuthScope authScope, Credentials credentials ->
+                },
                 getCredentials: { AuthScope scope ->
                     null
                 },
@@ -306,7 +304,7 @@ class AnypointTokenCredentialsProviderTest {
                     existingCleared = true
                 }
         ] as CredentialsProvider
-        def provider = getProvider(existing)
+        def provider = new AnypointTokenCredentialsProvider(existing)
         def authScope = new AuthScope('our.repo.url',
                                       8081,
                                       'realm',

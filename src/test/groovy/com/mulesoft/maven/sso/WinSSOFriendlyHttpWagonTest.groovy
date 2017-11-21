@@ -5,17 +5,11 @@ import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.HttpServerRequest
 import org.apache.tools.ant.taskdefs.condition.Os
 import org.codehaus.plexus.util.FileUtils
-import org.junit.Assume
-import org.junit.Before
-import org.junit.BeforeClass
-import org.junit.Ignore
-import org.junit.Test
+import org.junit.*
 
 import java.util.zip.ZipFile
 
-import static org.hamcrest.Matchers.containsString
-import static org.hamcrest.Matchers.equalTo
-import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
 class WinSSOFriendlyHttpWagonTest implements FileHelper, WebServerHelper {

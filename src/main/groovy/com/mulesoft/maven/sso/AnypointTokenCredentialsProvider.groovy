@@ -5,15 +5,16 @@ import org.apache.http.HttpHost
 import org.apache.http.auth.AuthScope
 import org.apache.http.auth.Credentials
 import org.apache.http.client.CredentialsProvider
-import org.apache.http.client.config.AuthSchemes
+import org.apache.http.impl.auth.win.WindowsCredentialsProvider
 import org.apache.http.impl.client.BasicCredentialsProvider
+import org.apache.http.impl.client.SystemDefaultCredentialsProvider
+import org.apache.http.impl.client.WinHttpClients
 import org.apache.http.impl.conn.DefaultSchemePortResolver
 import org.apache.maven.wagon.repository.Repository
 
 @Slf4j
-class AnypointTokenCredentialsProvider extends BasicCredentialsProvider {
-    private final CredentialsProvider existingProvider
-    private final static String BASIC_AUTH = AuthSchemes.BASIC.toUpperCase()
+class AnypointTokenCredentialsProvider implements CredentialsProvider {
+    private final CredentialsProvider baselineProvider
     private final Map<String, AccessTokenFetcher> fetchers = [:]
     // 2 hours
     private final static long DEFAULT_TOKEN_TIME_MS = Long.parseLong(
@@ -21,14 +22,19 @@ class AnypointTokenCredentialsProvider extends BasicCredentialsProvider {
     )
     private final long maxTokenLifeInMs
 
-    AnypointTokenCredentialsProvider(CredentialsProvider existingProvider = new BasicCredentialsProvider(),
+    AnypointTokenCredentialsProvider(CredentialsProvider baselineProvider = getBaselineProvider(),
                                      long maxTokenLifeInMs = DEFAULT_TOKEN_TIME_MS) {
         this.maxTokenLifeInMs = maxTokenLifeInMs
-        this.existingProvider = existingProvider
+        this.baselineProvider = baselineProvider
     }
 
-    private static boolean isBasicAuth(AuthScope authScope) {
-        authScope.scheme == BASIC_AUTH
+    private static CredentialsProvider getBaselineProvider() {
+        // can't retrieve credentialsprovider from builder, so do it this way
+        // WindowsNegotiateScheme doesn't actually use these, but best to be consistent
+        // in case that changes at some point
+        WinHttpClients.isWinAuthAvailable() ?
+                new WindowsCredentialsProvider(new SystemDefaultCredentialsProvider()) :
+                new BasicCredentialsProvider()
     }
 
     private static String getKey(String host,
@@ -54,34 +60,26 @@ class AnypointTokenCredentialsProvider extends BasicCredentialsProvider {
 
     @Override
     void setCredentials(AuthScope authScope, Credentials credentials) {
-        if (isBasicAuth(authScope)) {
-            super.setCredentials(authScope, credentials)
-        } else if (existingProvider) {
-            existingProvider.setCredentials(authScope, credentials)
-        }
+        baselineProvider.setCredentials(authScope, credentials)
     }
 
     @Override
     Credentials getCredentials(AuthScope authScope) {
-        if (isBasicAuth(authScope)) {
-            def existingCreds = super.getCredentials(authScope)
-            def expired = existingCreds &&
-                    (existingCreds instanceof AccessTokenCredentials) &&
-                    existingCreds.isExpired(maxTokenLifeInMs)
-            if (existingCreds && !expired) {
-                return existingCreds
-            }
-            def key = getKey(authScope.host,
-                             authScope.port)
-            if (fetchers.containsKey(key)) {
-                return getCredentialFromAccessTokenFetcher(expired,
-                                                           key,
-                                                           authScope)
-            }
+        def existingCreds = baselineProvider.getCredentials(authScope)
+        def expired = existingCreds &&
+                (existingCreds instanceof AccessTokenCredentials) &&
+                existingCreds.isExpired(maxTokenLifeInMs)
+        if (existingCreds && !expired) {
+            return existingCreds
         }
-        if (existingProvider) {
-            existingProvider.getCredentials(authScope)
+        def key = getKey(authScope.host,
+                         authScope.port)
+        if (fetchers.containsKey(key)) {
+            return getCredentialFromAccessTokenFetcher(expired,
+                                                       key,
+                                                       authScope)
         }
+        return null
     }
 
     private AccessTokenCredentials getCredentialFromAccessTokenFetcher(boolean expired,
@@ -99,9 +97,6 @@ class AnypointTokenCredentialsProvider extends BasicCredentialsProvider {
 
     @Override
     void clear() {
-        super.clear()
-        if (existingProvider) {
-            existingProvider.clear()
-        }
+        baselineProvider.clear()
     }
 }
