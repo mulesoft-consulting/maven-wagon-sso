@@ -81,6 +81,7 @@ class AccessTokenFetcherImplTest implements FileHelper, WebServerHelper {
         def fetcher = new AccessTokenFetcherImpl(proxyInfo,
                                                  'http://anypoint.test.com/profile_location/',
                                                  'http://a_place_that_posts_saml_token')
+        def cssRetrieved = false
         httpServer.requestHandler { HttpServerRequest request ->
             def uri = request.absoluteURI()
             println "fake proxy got ${uri}"
@@ -89,8 +90,9 @@ class AccessTokenFetcherImplTest implements FileHelper, WebServerHelper {
             }
             request.response().with {
                 if (uri.endsWith('css')) {
-                    statusCode = 200
-                    end('foobar')
+                    statusCode = 404
+                    cssRetrieved = true
+                    end()
                     return
                 }
                 switch (uri) {
@@ -155,5 +157,7 @@ class AccessTokenFetcherImplTest implements FileHelper, WebServerHelper {
         // assert
         assertThat result,
                    is(equalTo('abcdef'))
+        assertThat cssRetrieved,
+                   is(equalTo(false))
     }
 }
