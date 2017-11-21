@@ -9,7 +9,8 @@ import org.apache.http.protocol.HttpContext
 import org.apache.maven.wagon.proxy.ProxyInfo
 import org.apache.maven.wagon.proxy.ProxyUtils
 
-// the Wagon itself doesn't need this but HTMLUnit does to get our SAML token
+// the Wagon itself doesn't need this because it handles proxy bypasses in its own
+// but our access token fetcher doesn't so it needs it
 class WagonProxyInfoRoutePlanner extends DefaultProxyRoutePlanner {
     private final ProxyInfo proxyInfo
 
