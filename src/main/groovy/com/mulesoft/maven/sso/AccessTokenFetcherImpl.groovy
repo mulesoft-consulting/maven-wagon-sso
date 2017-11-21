@@ -34,6 +34,8 @@ class AccessTokenFetcherImpl implements AccessTokenFetcher {
                  samlIdpUrl
         def responsePage = client.getPage(samlIdpUrl)
         handleSamlResponse(responsePage)
+        // now we've done the equivalent of taking our browser all the way to the anypoint page, should have
+        // enough cookies to access the profile page, where we can grab a token
         log.info "SAML Flow complete, now fetching access token from {}",
                  anypointProfileUrl
         def jsonProfile = client.getPage(anypointProfileUrl)
