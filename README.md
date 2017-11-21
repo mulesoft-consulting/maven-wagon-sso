@@ -58,4 +58,4 @@ To configure an Anypoint maven server, put something like this in settings.xml:
 
 # TODOs
 
-1. The build will bundle lots of JAR dependencies into the finished product, which is quite large (10MB). There are probably classes in the JAR that aren't used. If someone had the time and the shadow/jar plugins for Gradle can aid in this, might be nice to only bundled classes that are used (and not already present with Maven)
+1. The build will bundle lots of JAR dependencies into the finished product, which is quite large (10MB). There are probably classes in the JAR that aren't used. If someone had the time and the shadow/jar plugins for Gradle can aid in this, might be nice to only bundled classes that are used (and not already present with Maven). That said, the biggest part of the JAR is the Groovy base library, which is harder to shade. It's probably not worth trading in size for runtime breakage to save a couple MB.
