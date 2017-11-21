@@ -1,14 +1,19 @@
 package com.mulesoft.maven.sso
 
 import groovy.json.JsonOutput
+import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.HttpServerRequest
 import org.apache.tools.ant.taskdefs.condition.Os
 import org.codehaus.plexus.util.FileUtils
 import org.junit.Assume
 import org.junit.Before
 import org.junit.BeforeClass
+import org.junit.Ignore
 import org.junit.Test
 
+import java.util.zip.ZipFile
+
+import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.is
 import static org.junit.Assert.assertThat
@@ -455,5 +460,66 @@ class WinSSOFriendlyHttpWagonTest implements FileHelper, WebServerHelper {
 
         // assert
         assert !exception
+    }
+
+    @Test
+    @Ignore('test freezes')
+    void deploy() {
+        // arrange
+        List<String> postedUrls = []
+        byte[] jarBytes = null
+        byte[] pomBytes = null
+        httpServer.requestHandler { HttpServerRequest request ->
+            def uri = request.absoluteURI()
+            println "Dummy server got ${request.method()} ${uri}..."
+            request.response().with {
+                if (request.method().name() == 'GET' && uri.contains('maven-metadata.xml')) {
+                    statusCode = 404
+                    end()
+                    return
+                }
+                postedUrls << uri
+                println 'starting bodyhandler'
+                request.bodyHandler { Buffer buffer ->
+                    if (uri.endsWith('pom')) {
+                        println 'grabbing pom bytes'
+                        pomBytes = buffer.bytes
+                    } else if (uri.endsWith('.jar')) {
+                        println 'grabbing JAR bytes'
+                        jarBytes = buffer.bytes
+                    }
+                    println 'done with bodyhandler'
+                }
+                print 'returning 200'
+                statusCode = 200
+                end()
+                print 'done!'
+            }
+        }.listen(8081, 'localhost')
+
+        // act
+        runMaven 'simple_settings.xml',
+                 'simple_upload_artifact.xml',
+                 'clean',
+                 'deploy',
+                '-X'
+
+        // assert
+        assert jarBytes
+        assert pomBytes
+        def pomText = new String(pomBytes)
+        assertThat pomText,
+                   is(containsString('<artifactId>test.artifact</artifactId>'))
+        scratchPad.mkdirs()
+        def jarFile = new File(scratchPad, 'something.jar')
+        jarFile.bytes = jarBytes
+        def zipFile = new ZipFile(jarFile)
+        def size = 0
+        zipFile.entries().each { entry ->
+            size++
+            println "entry ${entry.name}"
+        }
+        assertThat size,
+                   is(equalTo(7))
     }
 }

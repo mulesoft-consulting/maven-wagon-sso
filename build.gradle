@@ -33,8 +33,11 @@ dependencies {
     // Maven does not come with Groovy
     compile "org.codehaus.groovy:groovy-all:2.4.6"
     // is already built-in to Maven
-    provided 'org.apache.maven.wagon:wagon-provider-api:2.12'
-    provided 'org.apache.maven.wagon:wagon-http:2.12'
+    def wagonVersion = '2.12'
+    provided "org.apache.maven.wagon:wagon-provider-api:${wagonVersion}"
+    provided "org.apache.maven.wagon:wagon-http:${wagonVersion}"
+    // EncodingUtil is in a different package in the Maven package already out there (org/apache/maven/wagon/providers/http/wagon/shared/EncodingUtil)
+    runtime "org.apache.maven.wagon:wagon-http-shared:${wagonVersion}"
     provided group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
     //compile files('/usr/local/Cellar/maven/3.5.0/libexec/lib/wagon-http-2.12-shaded.jar')
     // we need 4.5.3 to get Windows SPNEGO friendly auth. Maven 3.5.0 already includes base 4.5.3
@@ -54,7 +57,8 @@ dependencies {
 jar {
     from {
         // Maven comes with everything marked provided above
-        configurations.compile.collect { z -> zipTree(z) }
+        def combine = configurations.compile + configurations.runtime
+        combine.collect { z -> zipTree(z) }
     }
 }
 
